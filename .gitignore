@@ -8,10 +8,25 @@ ehthumbs.db
 Thumbs.db
 *~
 
+# Gradle
+.gradle/
+.kotlin/
+**/build/
+
+# Local config
+local.properties
+
 # IDE
+.idea/
 .vscode/
 .fleet/
+*.iml
 
 # Logs
 *.log
 logs/
+
+# Xcode
+**/DerivedData/
+**/*.xcworkspace/
+**/xcuserdata/
