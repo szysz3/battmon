@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.battmon.ui.theme.*
 
 @Composable
 fun BattmonTheme(
@@ -22,28 +23,56 @@ fun BattmonTheme(
 ) {
     val colors = if (darkTheme) {
         darkColorScheme(
-            primary = Color(0xFFBB86FC),
-            secondary = Color(0xFF03DAC5),
-            tertiary = Color(0xFF3700B3)
+            primary = PrimaryBlue,
+            secondary = SecondaryTeal,
+            tertiary = StatusOnline,
+            background = SurfaceDark,
+            surface = GlassDark,
+            error = StatusOnBattery
         )
     } else {
         lightColorScheme(
-            primary = Color(0xFF6200EE),
-            secondary = Color(0xFF03DAC5),
-            tertiary = Color(0xFF3700B3)
+            primary = PrimaryBlue,
+            secondary = SecondaryTeal,
+            tertiary = StatusOnline,
+            background = SurfaceLight,
+            surface = GlassLight,
+            error = StatusOnBattery
         )
     }
+
     val typography = Typography(
-        bodyMedium = TextStyle(
+        displayLarge = TextStyle(
+            fontFamily = FontFamily.Default,
+            fontWeight = FontWeight.Bold,
+            fontSize = 32.sp
+        ),
+        headlineMedium = TextStyle(
+            fontFamily = FontFamily.Default,
+            fontWeight = FontWeight.Medium,
+            fontSize = 24.sp
+        ),
+        titleLarge = TextStyle(
+            fontFamily = FontFamily.Default,
+            fontWeight = FontWeight.Medium,
+            fontSize = 20.sp
+        ),
+        bodyLarge = TextStyle(
             fontFamily = FontFamily.Default,
             fontWeight = FontWeight.Normal,
             fontSize = 16.sp
+        ),
+        labelMedium = TextStyle(
+            fontFamily = FontFamily.Default,
+            fontWeight = FontWeight.Medium,
+            fontSize = 14.sp
         )
     )
+
     val shapes = Shapes(
-        small = RoundedCornerShape(4.dp),
-        medium = RoundedCornerShape(4.dp),
-        large = RoundedCornerShape(0.dp)
+        small = RoundedCornerShape(8.dp),
+        medium = RoundedCornerShape(16.dp),
+        large = RoundedCornerShape(24.dp)
     )
 
     MaterialTheme(
