@@ -4,3 +4,17 @@ ktor:
       - com.battmon.ApplicationKt.module
   deployment:
     port: 8080
+
+database:
+  jdbcUrl: "${DATABASE_URL:jdbc:postgresql://localhost:5432/battmon}"
+  driver: "org.postgresql.Driver"
+  user: "${DATABASE_USER:battmon}"
+  password: "${DATABASE_PASSWORD:battmon}"
+  maxPoolSize: 3
+  retentionDays: 365
+  retentionIntervalHours: 24
+
+ups:
+  monitor:
+    pollIntervalSeconds: ${UPS_POLL_INTERVAL:5}
+    command: "${UPS_COMMAND:apcaccess status}"
