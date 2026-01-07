@@ -14,6 +14,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -98,12 +100,26 @@ private fun HistoryItem(
 ) {
     val surfaceTone = MaterialTheme.colorScheme.surface
     val variantTone = MaterialTheme.colorScheme.surfaceVariant
-    val cardGradient = Brush.linearGradient(
-        colors = listOf(
-            surfaceTone.copy(alpha = 0.95f),
-            variantTone.copy(alpha = 0.8f)
+    val onSurfaceTone = MaterialTheme.colorScheme.onSurface
+    val accentTone = MaterialTheme.colorScheme.primary
+    val isLightSurface = surfaceTone.luminance() > 0.5f
+    val cardGradient = if (isLightSurface) {
+        Brush.linearGradient(
+            colors = listOf(
+                lerp(variantTone, onSurfaceTone, 0.04f),
+                lerp(variantTone, accentTone, 0.08f),
+                lerp(variantTone, onSurfaceTone, 0.2f)
+            )
         )
-    )
+    } else {
+        Brush.linearGradient(
+            colors = listOf(
+                surfaceTone.copy(alpha = 0.95f),
+                variantTone.copy(alpha = 0.9f),
+                surfaceTone.copy(alpha = 0.7f)
+            )
+        )
+    }
 
     GlassCard(
         modifier = Modifier
@@ -251,28 +267,23 @@ private fun HistoryItem(
 
 @Composable
 private fun MetricChip(label: String, value: String) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-        shape = MaterialTheme.shapes.medium
+    Column(
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 1.2.sp
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.2.sp
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 

@@ -1,15 +1,18 @@
 package com.battmon.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import com.battmon.ui.dashboard.DashboardScreen
 import com.battmon.ui.history.HistoryScreen
 import com.battmon.ui.navigation.Screen
@@ -17,35 +20,56 @@ import com.battmon.ui.settings.SettingsScreen
 
 @Composable
 fun BattmonApp() {
-    val navController = rememberNavController()
+    var currentRoute by rememberSaveable { mutableStateOf(Screen.Dashboard.route) }
+    var previousRoute by rememberSaveable { mutableStateOf(Screen.Dashboard.route) }
+    val screens = remember { Screen.items }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = { BottomNavigationBar(navController) }
+        bottomBar = {
+            BottomNavigationBar(
+                currentRoute = currentRoute,
+                onSelect = { screen ->
+                    if (screen.route != currentRoute) {
+                        previousRoute = currentRoute
+                        currentRoute = screen.route
+                    }
+                }
+            )
+        }
     ) { paddingValues ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Dashboard.route,
+        val currentIndex = screens.indexOfFirst { it.route == currentRoute }
+        val previousIndex = screens.indexOfFirst { it.route == previousRoute }
+        val direction = if (currentIndex >= previousIndex) 1 else -1
+        AnimatedContent(
+            targetState = currentRoute,
+            transitionSpec = {
+                slideInHorizontally(
+                    animationSpec = tween(durationMillis = 280),
+                    initialOffsetX = { fullWidth -> fullWidth * direction }
+                ) + fadeIn(animationSpec = tween(durationMillis = 140)) togetherWith
+                    slideOutHorizontally(
+                        animationSpec = tween(durationMillis = 240),
+                        targetOffsetX = { fullWidth -> -fullWidth * direction }
+                    ) + fadeOut(animationSpec = tween(durationMillis = 120))
+            },
             modifier = Modifier.padding(paddingValues)
         ) {
-            composable(Screen.Dashboard.route) {
-                DashboardScreen()
-            }
-            composable(Screen.History.route) {
-                HistoryScreen()
-            }
-            composable(Screen.Settings.route) {
-                SettingsScreen()
+            when (it) {
+                Screen.Dashboard.route -> DashboardScreen()
+                Screen.History.route -> HistoryScreen()
+                Screen.Settings.route -> SettingsScreen()
+                else -> DashboardScreen()
             }
         }
     }
 }
 
 @Composable
-private fun BottomNavigationBar(navController: NavHostController) {
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-
+private fun BottomNavigationBar(
+    currentRoute: String,
+    onSelect: (Screen) -> Unit
+) {
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.background,
         tonalElevation = 0.dp
@@ -60,18 +84,7 @@ private fun BottomNavigationBar(navController: NavHostController) {
                 },
                 label = { Text(screen.label) },
                 selected = currentRoute == screen.route,
-                onClick = {
-                    navController.navigate(screen.route) {
-                        // Pop up to the start destination to avoid stack buildup
-                        popUpTo(Screen.Dashboard.route) {
-                            saveState = true
-                        }
-                        // Avoid multiple copies of the same destination
-                        launchSingleTop = true
-                        // Restore state when reselecting a previously selected item
-                        restoreState = true
-                    }
-                }
+                onClick = { onSelect(screen) }
             )
         }
     }

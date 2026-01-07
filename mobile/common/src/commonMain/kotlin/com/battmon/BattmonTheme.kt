@@ -36,7 +36,9 @@ fun BattmonTheme(
             secondary = SecondaryTeal,
             tertiary = StatusOnline,
             background = SurfaceLight,
-            surface = GlassLight,
+            surface = Color.White,
+            surfaceVariant = Color(0xFFF1F5F9),
+            onSurfaceVariant = Color(0xFF64748B),
             error = StatusOnBattery
         )
     }
