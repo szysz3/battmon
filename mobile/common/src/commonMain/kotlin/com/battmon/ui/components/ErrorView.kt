@@ -16,39 +16,51 @@ fun ErrorView(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "⚠️",
-            style = MaterialTheme.typography.displayLarge
-        )
+        GlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            cornerRadius = 22.dp,
+            padding = 24.dp,
+            elevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "⚠️",
+                    style = MaterialTheme.typography.displayLarge
+                )
 
-        Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = "Error",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.error
-        )
+                Text(
+                    text = "Error",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
 
-        Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-            textAlign = TextAlign.Center
-        )
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
+                    textAlign = TextAlign.Center
+                )
 
-        Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-        Button(onClick = onRetry) {
-            Text("Retry")
+                Button(onClick = onRetry) {
+                    Text("Retry")
+                }
+            }
         }
     }
 }

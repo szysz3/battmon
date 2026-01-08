@@ -3,26 +3,34 @@ package com.battmon.ui.dashboard
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.battmon.model.UpsStatus
 import com.battmon.ui.components.*
 import com.battmon.ui.state.UiState
-import com.battmon.ui.theme.BatteryGradient
-import com.battmon.ui.theme.LoadGradient
-import com.battmon.ui.theme.StatusGradient
-import com.battmon.ui.theme.TimeGradient
+import com.battmon.ui.theme.AccentPink
+import com.battmon.ui.theme.PrimaryBlue
+import com.battmon.ui.theme.SecondaryTeal
+import com.battmon.ui.theme.StatusOffline
+import com.battmon.ui.theme.StatusOnBattery
+import com.battmon.ui.theme.StatusOnline
+import com.battmon.ui.theme.StatusWarning
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.math.roundToInt
@@ -97,15 +105,28 @@ private fun DashboardContent(status: UpsStatus) {
 // Hero Status Card - Large, prominent display (Very Important)
 @Composable
 private fun HeroStatusCard(status: UpsStatus) {
+    val accent = statusAccentColor(status.status)
+    val cardText = MaterialTheme.colorScheme.onSurface
+    val mutedText = MaterialTheme.colorScheme.onSurfaceVariant
     GlassCard(
-        gradient = StatusGradient,
-        modifier = Modifier.fillMaxWidth(),
+        gradient = dashboardCardGradient(accent),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(28.dp))
+            .glassAccentShimmer(
+                accent = accent,
+                thickness = 2.dp,
+                baseAlpha = 0.22f,
+                highlightAlpha = 0.65f,
+                shimmerWidth = 52.dp,
+                drawOnTop = true
+            ),
         cornerRadius = 28.dp,
         padding = 26.dp,
         elevation = 12.dp
     ) {
         // Small title
-        CardLabel(text = "UPS STATUS", color = Color.White.copy(alpha = 0.65f))
+        CardLabel(text = "UPS STATUS", color = mutedText.copy(alpha = 0.9f))
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -117,18 +138,16 @@ private fun HeroStatusCard(status: UpsStatus) {
         Text(
             text = "Updated ${formatTime(status.timestamp)}",
             style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.75f),
+            color = mutedText.copy(alpha = 0.85f),
             fontSize = 12.sp
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // Divider
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(Color.White.copy(alpha = 0.2f))
+        HorizontalDivider(
+            modifier = Modifier.fillMaxWidth(),
+            color = mutedText.copy(alpha = 0.18f)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -144,7 +163,7 @@ private fun HeroStatusCard(status: UpsStatus) {
                 Text(
                     text = "Model",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.55f),
+                    color = mutedText.copy(alpha = 0.8f),
                     fontSize = 10.sp,
                     letterSpacing = 0.6.sp
                 )
@@ -152,7 +171,7 @@ private fun HeroStatusCard(status: UpsStatus) {
                 Text(
                     text = status.model,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.8f),
+                    color = cardText,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -163,7 +182,7 @@ private fun HeroStatusCard(status: UpsStatus) {
                 Text(
                     text = "Self Test",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.55f),
+                    color = mutedText.copy(alpha = 0.8f),
                     fontSize = 10.sp,
                     letterSpacing = 0.6.sp
                 )
@@ -171,7 +190,7 @@ private fun HeroStatusCard(status: UpsStatus) {
                 Text(
                     text = status.selftest ?: "N/A",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.8f),
+                    color = cardText,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -185,6 +204,9 @@ private fun HeroStatusCard(status: UpsStatus) {
 private fun ModernLoadCard(status: UpsStatus) {
     val loadPercent = (status.loadpct?.roundToInt() ?: 0)
     val animatedProgress = remember { Animatable(0f) }
+    val accent = PrimaryBlue
+    val cardText = MaterialTheme.colorScheme.onSurface
+    val mutedText = MaterialTheme.colorScheme.onSurfaceVariant
 
     LaunchedEffect(loadPercent) {
         animatedProgress.animateTo(
@@ -194,8 +216,18 @@ private fun ModernLoadCard(status: UpsStatus) {
     }
 
     GlassCard(
-        gradient = LoadGradient,
-        modifier = Modifier.fillMaxWidth(),
+        gradient = dashboardCardGradient(accent),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .glassAccentShimmer(
+                accent = accent,
+                thickness = 2.dp,
+                baseAlpha = 0.22f,
+                highlightAlpha = 0.65f,
+                shimmerWidth = 52.dp,
+                drawOnTop = true
+            ),
         cornerRadius = 24.dp,
         padding = 22.dp,
         elevation = 10.dp
@@ -210,13 +242,13 @@ private fun ModernLoadCard(status: UpsStatus) {
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                CardLabel(text = "CURRENT LOAD", color = Color.White.copy(alpha = 0.75f))
+                CardLabel(text = "CURRENT LOAD", color = mutedText.copy(alpha = 0.9f))
 
                 Text(
                     text = "$loadPercent%",
                     style = MaterialTheme.typography.displayLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = cardText,
                     fontSize = 40.sp,
                     lineHeight = 40.sp
                 )
@@ -224,7 +256,7 @@ private fun ModernLoadCard(status: UpsStatus) {
                 Text(
                     text = "${status.nompower?.roundToInt() ?: 0} W",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White.copy(alpha = 0.8f),
+                    color = mutedText.copy(alpha = 0.9f),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -238,17 +270,22 @@ private fun ModernLoadCard(status: UpsStatus) {
                 CircularProgressIndicator(
                     progress = { animatedProgress.value },
                     modifier = Modifier.size(100.dp),
-                    color = Color.White.copy(alpha = 0.9f),
+                    color = accent.copy(alpha = 0.9f),
                     strokeWidth = 8.dp,
-                    trackColor = Color.White.copy(alpha = 0.2f),
+                    trackColor = accent.copy(alpha = 0.2f),
                     strokeCap = StrokeCap.Round
                 )
                 Text(
                     text = "$loadPercent%",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    fontSize = 20.sp
+                    color = cardText,
+                    fontSize = 20.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .wrapContentSize(Alignment.Center)
+                        .offset(y = (-1).dp)
                 )
             }
         }
@@ -261,15 +298,28 @@ private fun CompactBatteryCard(status: UpsStatus) {
     val batteryPercent = status.bcharge?.roundToInt() ?: 0
     val actualVoltage = status.battv ?: 0.0
     val nominalVoltage = status.nombattv ?: 0.0
+    val accent = SecondaryTeal
+    val cardText = MaterialTheme.colorScheme.onSurface
+    val mutedText = MaterialTheme.colorScheme.onSurfaceVariant
 
     GlassCard(
-        gradient = BatteryGradient,
-        modifier = Modifier.fillMaxWidth(),
+        gradient = dashboardCardGradient(accent),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .glassAccentShimmer(
+                accent = accent,
+                thickness = 2.dp,
+                baseAlpha = 0.22f,
+                highlightAlpha = 0.65f,
+                shimmerWidth = 52.dp,
+                drawOnTop = true
+            ),
         cornerRadius = 22.dp,
         padding = 18.dp,
         elevation = 8.dp
     ) {
-        CardLabel(text = "BATTERY", color = Color.White.copy(alpha = 0.75f))
+        CardLabel(text = "BATTERY", color = mutedText.copy(alpha = 0.9f))
 
         Spacer(modifier = Modifier.height(14.dp))
 
@@ -277,7 +327,7 @@ private fun CompactBatteryCard(status: UpsStatus) {
             text = "$batteryPercent%",
             style = MaterialTheme.typography.displayMedium,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = cardText,
             fontSize = 34.sp,
             lineHeight = 34.sp
         )
@@ -287,7 +337,7 @@ private fun CompactBatteryCard(status: UpsStatus) {
         Text(
             text = "$actualVoltage / ${nominalVoltage}V",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.75f),
+            color = mutedText.copy(alpha = 0.9f),
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium
         )
@@ -298,15 +348,28 @@ private fun CompactBatteryCard(status: UpsStatus) {
 @Composable
 private fun CompactTimeCard(status: UpsStatus) {
     val timeLeft = status.timeleft?.roundToInt() ?: 0
+    val accent = AccentPink
+    val cardText = MaterialTheme.colorScheme.onSurface
+    val mutedText = MaterialTheme.colorScheme.onSurfaceVariant
 
     GlassCard(
-        gradient = TimeGradient,
-        modifier = Modifier.fillMaxWidth(),
+        gradient = dashboardCardGradient(accent),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .glassAccentShimmer(
+                accent = accent,
+                thickness = 2.dp,
+                baseAlpha = 0.22f,
+                highlightAlpha = 0.65f,
+                shimmerWidth = 52.dp,
+                drawOnTop = true
+            ),
         cornerRadius = 22.dp,
         padding = 18.dp,
         elevation = 8.dp
     ) {
-        CardLabel(text = "TIME LEFT", color = Color.White.copy(alpha = 0.75f))
+        CardLabel(text = "TIME LEFT", color = mutedText.copy(alpha = 0.9f))
 
         Spacer(modifier = Modifier.height(14.dp))
 
@@ -314,7 +377,7 @@ private fun CompactTimeCard(status: UpsStatus) {
             text = "$timeLeft",
             style = MaterialTheme.typography.displayMedium,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = cardText,
             fontSize = 34.sp,
             lineHeight = 34.sp
         )
@@ -324,7 +387,7 @@ private fun CompactTimeCard(status: UpsStatus) {
         Text(
             text = "minutes",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.75f),
+            color = mutedText.copy(alpha = 0.9f),
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium
         )
@@ -349,4 +412,31 @@ private fun formatTime(instant: kotlinx.datetime.Instant): String {
     val minutes = localDateTime.minute.toString().padStart(2, '0')
     val seconds = localDateTime.second.toString().padStart(2, '0')
     return "$hours:$minutes:$seconds"
+}
+
+@Composable
+private fun dashboardCardGradient(accent: Color): Brush {
+    val surface = MaterialTheme.colorScheme.surface
+    val variant = MaterialTheme.colorScheme.surfaceVariant
+    val isLightSurface = surface.luminance() > 0.5f
+    val midBlend = if (isLightSurface) 0.16f else 0.1f
+    val endBlend = if (isLightSurface) 0.3f else 0.24f
+    return Brush.linearGradient(
+        colors = listOf(
+            lerp(surface, variant, 0.12f),
+            lerp(variant, accent, midBlend),
+            lerp(surface, variant, endBlend)
+        )
+    )
+}
+
+private fun statusAccentColor(status: String): Color {
+    val normalized = status.uppercase()
+    return when {
+        normalized.contains("ONLINE") -> StatusOnline
+        normalized.contains("ONBATT") -> StatusOnBattery
+        normalized.contains("LOWBATT") -> StatusOnBattery
+        normalized.contains("COMMLOST") -> StatusOffline
+        else -> StatusWarning
+    }
 }

@@ -4,12 +4,20 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -39,37 +48,169 @@ fun HistoryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val expandedIds by viewModel.expandedIds.collectAsState()
+    val filterState by viewModel.filterState.collectAsState()
+    val filteredItems by viewModel.filteredItems.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        when (val state = uiState) {
-            is UiState.Initial, is UiState.Loading -> {
-                LoadingShimmer(modifier = Modifier.padding(16.dp))
-            }
+    Column(modifier = Modifier.fillMaxSize()) {
+        HistoryFilterCard(
+            filterState = filterState,
+            onPresetSelected = viewModel::applyPreset,
+            onStatusSelected = viewModel::updateStatusFilter
+        )
 
-            is UiState.Success -> {
-                if (state.data.isEmpty()) {
-                    EmptyState(
-                        title = "No History",
-                        description = "No data available for the selected time range"
-                    )
-                } else {
-                    HistoryList(
-                        items = state.data,
-                        expandedIds = expandedIds,
-                        onToggleExpand = { viewModel.toggleExpanded(it) }
-                    )
+        Box(modifier = Modifier.fillMaxSize()) {
+            val displayState = remember(uiState, filteredItems) {
+                when (val state = uiState) {
+                    is UiState.Initial, is UiState.Loading -> HistoryDisplayState.Loading
+                    is UiState.Error -> HistoryDisplayState.Error(state.message)
+                    is UiState.Success -> {
+                        if (filteredItems.isEmpty()) {
+                            HistoryDisplayState.Empty
+                        } else {
+                            HistoryDisplayState.Items(filteredItems)
+                        }
+                    }
                 }
             }
 
-            is UiState.Error -> {
-                ErrorView(
-                    message = state.message,
-                    onRetry = { viewModel.loadHistory() }
+            AnimatedContent(
+                targetState = displayState,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(200)) + slideInVertically(
+                        animationSpec = tween(220, easing = FastOutSlowInEasing),
+                        initialOffsetY = { it / 8 }
+                    ) togetherWith fadeOut(animationSpec = tween(140))
+                },
+                modifier = Modifier.fillMaxSize()
+            ) { state ->
+                when (state) {
+                    is HistoryDisplayState.Loading -> {
+                        LoadingShimmer(modifier = Modifier.padding(16.dp))
+                    }
+
+                    is HistoryDisplayState.Empty -> {
+                        EmptyState(
+                            title = "No History",
+                            description = "No data available for the selected filters",
+                            icon = Icons.Rounded.History
+                        )
+                    }
+
+                    is HistoryDisplayState.Items -> {
+                        HistoryList(
+                            items = state.items,
+                            expandedIds = expandedIds,
+                            onToggleExpand = { viewModel.toggleExpanded(it) }
+                        )
+                    }
+
+                    is HistoryDisplayState.Error -> {
+                        ErrorView(
+                            message = state.message,
+                            onRetry = { viewModel.reloadHistory() }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HistoryFilterCard(
+    filterState: HistoryFilterState,
+    onPresetSelected: (HistoryRangePreset) -> Unit,
+    onStatusSelected: (HistoryStatusFilter) -> Unit
+) {
+    val surfaceTone = MaterialTheme.colorScheme.surface
+    val variantTone = MaterialTheme.colorScheme.surfaceVariant
+    val accentTone = MaterialTheme.colorScheme.primary
+    val isLightSurface = surfaceTone.luminance() > 0.5f
+    val cardGradient = if (isLightSurface) {
+        Brush.linearGradient(
+            colors = listOf(
+                lerp(surfaceTone, variantTone, 0.12f),
+                lerp(variantTone, accentTone, 0.07f),
+                lerp(surfaceTone, variantTone, 0.25f)
+            )
+        )
+    } else {
+        Brush.linearGradient(
+            colors = listOf(
+                surfaceTone.copy(alpha = 0.92f),
+                variantTone.copy(alpha = 0.85f),
+                surfaceTone.copy(alpha = 0.78f)
+            )
+        )
+    }
+
+    GlassCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .glassAccentShimmer(accentTone),
+        gradient = cardGradient,
+        elevation = 6.dp,
+        cornerRadius = 22.dp,
+        padding = 18.dp
+    ) {
+        Column {
+            SectionLabel(text = "FILTER RANGE")
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                FilterChip(
+                    selected = filterState.selectedPreset == HistoryRangePreset.LAST_24_HOURS,
+                    onClick = { onPresetSelected(HistoryRangePreset.LAST_24_HOURS) },
+                    label = { Text("Last 24h") }
+                )
+                FilterChip(
+                    selected = filterState.selectedPreset == HistoryRangePreset.LAST_7_DAYS,
+                    onClick = { onPresetSelected(HistoryRangePreset.LAST_7_DAYS) },
+                    label = { Text("Last 7d") }
+                )
+                FilterChip(
+                    selected = filterState.selectedPreset == HistoryRangePreset.LAST_30_DAYS,
+                    onClick = { onPresetSelected(HistoryRangePreset.LAST_30_DAYS) },
+                    label = { Text("Last 30d") }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            SectionLabel(text = "STATUS")
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                FilterChip(
+                    selected = filterState.statusFilter == HistoryStatusFilter.ALL,
+                    onClick = { onStatusSelected(HistoryStatusFilter.ALL) },
+                    label = { Text("All") }
+                )
+                FilterChip(
+                    selected = filterState.statusFilter == HistoryStatusFilter.POSITIVE,
+                    onClick = { onStatusSelected(HistoryStatusFilter.POSITIVE) },
+                    label = { Text("Online") }
+                )
+                FilterChip(
+                    selected = filterState.statusFilter == HistoryStatusFilter.NEGATIVE,
+                    onClick = { onStatusSelected(HistoryStatusFilter.NEGATIVE) },
+                    label = { Text("Other") }
                 )
             }
         }
     }
 }
+
 
 @Composable
 private fun HistoryList(
@@ -79,8 +220,8 @@ private fun HistoryList(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         items(items, key = { it.id ?: it.timestamp.toString() }) { status ->
             HistoryItem(
@@ -106,17 +247,17 @@ private fun HistoryItem(
     val cardGradient = if (isLightSurface) {
         Brush.linearGradient(
             colors = listOf(
-                lerp(variantTone, onSurfaceTone, 0.04f),
+                lerp(surfaceTone, variantTone, 0.15f),
                 lerp(variantTone, accentTone, 0.08f),
-                lerp(variantTone, onSurfaceTone, 0.2f)
+                lerp(surfaceTone, variantTone, 0.3f)
             )
         )
     } else {
         Brush.linearGradient(
             colors = listOf(
-                surfaceTone.copy(alpha = 0.95f),
-                variantTone.copy(alpha = 0.9f),
-                surfaceTone.copy(alpha = 0.7f)
+                surfaceTone.copy(alpha = 0.9f),
+                variantTone.copy(alpha = 0.86f),
+                surfaceTone.copy(alpha = 0.74f)
             )
         )
     }
@@ -124,14 +265,15 @@ private fun HistoryItem(
     GlassCard(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(22.dp))
+            .glassAccentShimmer(accentTone, baseAlpha = 0.28f, highlightAlpha = 0.7f)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = LocalIndication.current
             ) { onToggle() },
         gradient = cardGradient,
-        elevation = 6.dp,
-        cornerRadius = 20.dp,
+        elevation = 8.dp,
+        cornerRadius = 22.dp,
         padding = 18.dp
     ) {
         // Collapsed view
@@ -153,19 +295,29 @@ private fun HistoryItem(
                     )
                     Text(
                         text = formatDate(status.timestamp),
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                        letterSpacing = 0.6.sp
+                        letterSpacing = 1.2.sp
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     StatusBadge(status = status.status)
                 }
 
-                Icon(
-                    imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
-                    contentDescription = if (isExpanded) "Collapse" else "Expand",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                )
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    )
+                ) {
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                        contentDescription = if (isExpanded) "Collapse" else "Expand",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                        modifier = Modifier.padding(6.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -249,17 +401,6 @@ private fun HistoryItem(
                     DetailRow("Battery Date", status.battdate ?: "N/A")
                     DetailRow("Self Test", status.selftest ?: "N/A")
                 }
-
-                ExpandedSection("SYSTEM INFO") {
-                    DetailRow("Hostname", status.hostname)
-                    DetailRow("APC Version", status.apc)
-                    DetailRow("Daemon Version", status.version)
-                    DetailRow("Start Time", status.starttime)
-                    DetailRow("Master", status.master ?: "N/A")
-                    DetailRow("Master Update", status.masterupd ?: "N/A")
-                    DetailRow("Date", status.date)
-                    DetailRow("End APC", status.endApc)
-                }
             }
         }
     }
@@ -267,23 +408,32 @@ private fun HistoryItem(
 
 @Composable
 private fun MetricChip(label: String, value: String) {
-    Column(
-        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+        )
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 1.2.sp
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.1.sp
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
 
@@ -308,15 +458,16 @@ private fun DetailRow(label: String, value: String) {
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            modifier = Modifier.weight(1f)
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
+            modifier = Modifier.weight(1.1f)
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(1f)
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(0.9f)
         )
     }
 }
@@ -338,10 +489,17 @@ private fun formatDate(instant: Instant): String {
 private fun SectionLabel(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.labelMedium,
+        style = MaterialTheme.typography.labelSmall,
         fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
-        letterSpacing = 1.2.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
+        letterSpacing = 1.4.sp,
         modifier = Modifier.padding(bottom = 8.dp)
     )
+}
+
+private sealed class HistoryDisplayState {
+    data object Loading : HistoryDisplayState()
+    data object Empty : HistoryDisplayState()
+    data class Items(val items: List<UpsStatus>) : HistoryDisplayState()
+    data class Error(val message: String) : HistoryDisplayState()
 }

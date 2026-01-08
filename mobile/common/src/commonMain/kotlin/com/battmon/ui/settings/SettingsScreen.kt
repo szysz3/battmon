@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.battmon.ui.components.GlassCard
 
 @Composable
 fun SettingsScreen() {
@@ -15,26 +16,5 @@ fun SettingsScreen() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = "⚙️",
-                style = MaterialTheme.typography.displayLarge
-            )
-
-            Text(
-                text = "Settings",
-                style = MaterialTheme.typography.headlineMedium
-            )
-
-            Text(
-                text = "Coming Soon",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                textAlign = TextAlign.Center
-            )
-        }
     }
 }

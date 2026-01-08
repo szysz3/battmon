@@ -10,47 +10,47 @@ val StatusWarning = Color(0xFFF59E0B)       // Amber
 val StatusOffline = Color(0xFF6B7280)       // Slate Gray
 
 // Primary Colors
-val PrimaryBlue = Color(0xFF3B82F6)         // Modern Blue
-val SecondaryTeal = Color(0xFF14B8A6)       // Teal
+val PrimaryBlue = Color(0xFF1E3A8A)         // Deep Indigo
+val SecondaryTeal = Color(0xFF0F766E)       // Deep Teal
 val AccentPurple = Color(0xFF8B5CF6)        // Purple
 val AccentPink = Color(0xFFEC4899)          // Pink
 
 // Background Colors
-val SurfaceLight = Color(0xFFF8FAFC)        // Soft white
-val SurfaceDark = Color(0xFF0F172A)         // Deep dark blue
-val GlassLight = Color(0xE6FFFFFF)          // Frosted white
-val GlassDark = Color(0xE61E293B)           // Frosted dark blue
+val SurfaceLight = Color(0xFFF5F7FB)        // Soft white
+val SurfaceDark = Color(0xFF0B1220)         // Deep dark blue
+val GlassLight = Color(0xEFFFFFFF)          // Frosted white
+val GlassDark = Color(0xE6121A2B)           // Frosted dark blue
 
 // Modern iOS-inspired Gradients with multiple colors
 val StatusGradient = Brush.linearGradient(
     colors = listOf(
-        Color(0xFF2E5FAE),  // Deep blue
-        Color(0xFF3A76C8),  // Mid blue
-        Color(0xFF3E8F8A)   // Deep teal
+        Color(0xFF1A2D6F),  // Deep indigo
+        Color(0xFF24479A),  // Muted blue
+        Color(0xFF1E6B66)   // Deep teal
     )
 )
 
 val BatteryGradient = Brush.linearGradient(
     colors = listOf(
-        Color(0xFF2FBF9B),  // Soft emerald
-        Color(0xFF1AA07A),  // Deep emerald
-        Color(0xFF6AD9B6)   // Light emerald
+        Color(0xFF0F6B5B),  // Deep emerald
+        Color(0xFF1C8B78),  // Muted emerald
+        Color(0xFF3BA48E)   // Soft emerald
     )
 )
 
 val LoadGradient = Brush.linearGradient(
     colors = listOf(
-        Color(0xFF4F8FE6),  // Soft blue
-        Color(0xFF3576D2),  // Mid blue
-        Color(0xFF8DBAF2)   // Light blue
+        Color(0xFF1D3E7A),  // Deep blue
+        Color(0xFF2A5B9E),  // Mid blue
+        Color(0xFF4D7CB9)   // Soft blue
     )
 )
 
 val TimeGradient = Brush.linearGradient(
     colors = listOf(
-        Color(0xFFF2C77A),  // Soft amber
-        Color(0xFFE3A85A),  // Warm amber
-        Color(0xFFF7D7A3)   // Light amber
+        Color(0xFF9A6A26),  // Deep amber
+        Color(0xFFC0843B),  // Warm amber
+        Color(0xFFD3A76D)   // Soft amber
     )
 )
 
