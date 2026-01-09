@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
@@ -108,11 +109,13 @@ private fun HeroStatusCard(status: UpsStatus) {
     val accent = statusAccentColor(status.status)
     val cardText = MaterialTheme.colorScheme.onSurface
     val mutedText = MaterialTheme.colorScheme.onSurfaceVariant
+    val cardShape = RoundedCornerShape(28.dp)
     GlassCard(
         gradient = dashboardCardGradient(accent),
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
+            .shadow(10.dp, cardShape, clip = false)
+            .clip(cardShape)
             .glassAccentShimmer(
                 accent = accent,
                 thickness = 2.dp,
@@ -123,7 +126,7 @@ private fun HeroStatusCard(status: UpsStatus) {
             ),
         cornerRadius = 28.dp,
         padding = 26.dp,
-        elevation = 12.dp
+        elevation = 2.dp
     ) {
         // Small title
         CardLabel(text = "UPS STATUS", color = mutedText.copy(alpha = 0.9f))
@@ -207,6 +210,7 @@ private fun ModernLoadCard(status: UpsStatus) {
     val accent = PrimaryBlue
     val cardText = MaterialTheme.colorScheme.onSurface
     val mutedText = MaterialTheme.colorScheme.onSurfaceVariant
+    val cardShape = RoundedCornerShape(24.dp)
 
     LaunchedEffect(loadPercent) {
         animatedProgress.animateTo(
@@ -219,7 +223,8 @@ private fun ModernLoadCard(status: UpsStatus) {
         gradient = dashboardCardGradient(accent),
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .shadow(10.dp, cardShape, clip = false)
+            .clip(cardShape)
             .glassAccentShimmer(
                 accent = accent,
                 thickness = 2.dp,
@@ -230,7 +235,7 @@ private fun ModernLoadCard(status: UpsStatus) {
             ),
         cornerRadius = 24.dp,
         padding = 22.dp,
-        elevation = 10.dp
+        elevation = 2.dp
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -301,12 +306,14 @@ private fun CompactBatteryCard(status: UpsStatus) {
     val accent = SecondaryTeal
     val cardText = MaterialTheme.colorScheme.onSurface
     val mutedText = MaterialTheme.colorScheme.onSurfaceVariant
+    val cardShape = RoundedCornerShape(22.dp)
 
     GlassCard(
         gradient = dashboardCardGradient(accent),
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
+            .shadow(10.dp, cardShape, clip = false)
+            .clip(cardShape)
             .glassAccentShimmer(
                 accent = accent,
                 thickness = 2.dp,
@@ -317,7 +324,7 @@ private fun CompactBatteryCard(status: UpsStatus) {
             ),
         cornerRadius = 22.dp,
         padding = 18.dp,
-        elevation = 8.dp
+        elevation = 2.dp
     ) {
         CardLabel(text = "BATTERY", color = mutedText.copy(alpha = 0.9f))
 
@@ -351,12 +358,14 @@ private fun CompactTimeCard(status: UpsStatus) {
     val accent = AccentPink
     val cardText = MaterialTheme.colorScheme.onSurface
     val mutedText = MaterialTheme.colorScheme.onSurfaceVariant
+    val cardShape = RoundedCornerShape(22.dp)
 
     GlassCard(
         gradient = dashboardCardGradient(accent),
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
+            .shadow(10.dp, cardShape, clip = false)
+            .clip(cardShape)
             .glassAccentShimmer(
                 accent = accent,
                 thickness = 2.dp,
@@ -367,7 +376,7 @@ private fun CompactTimeCard(status: UpsStatus) {
             ),
         cornerRadius = 22.dp,
         padding = 18.dp,
-        elevation = 8.dp
+        elevation = 2.dp
     ) {
         CardLabel(text = "TIME LEFT", color = mutedText.copy(alpha = 0.9f))
 

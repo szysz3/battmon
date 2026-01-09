@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -22,12 +23,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.ExpandLess
@@ -51,61 +57,63 @@ fun HistoryScreen(
     val expandedIds by viewModel.expandedIds.collectAsState()
     val filterState by viewModel.filterState.collectAsState()
     val filteredItems by viewModel.filteredItems.collectAsState()
+    val density = LocalDensity.current
+    val listItemSpacing = 14.dp
+    val filterCardVerticalPadding = 12.dp
+    var filterCardHeight by remember { mutableStateOf(0.dp) }
+    val listTopInset = filterCardHeight + listItemSpacing
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        HistoryFilterCard(
-            filterState = filterState,
-            onPresetSelected = viewModel::applyPreset,
-            onStatusSelected = viewModel::updateStatusFilter
-        )
-
-        Box(modifier = Modifier.fillMaxSize()) {
-            val displayState = remember(uiState, filteredItems) {
-                when (val state = uiState) {
-                    is UiState.Initial, is UiState.Loading -> HistoryDisplayState.Loading
-                    is UiState.Error -> HistoryDisplayState.Error(state.message)
-                    is UiState.Success -> {
-                        if (filteredItems.isEmpty()) {
-                            HistoryDisplayState.Empty
-                        } else {
-                            HistoryDisplayState.Items(filteredItems)
-                        }
+    Box(modifier = Modifier.fillMaxSize()) {
+        val displayState = remember(uiState, filteredItems) {
+            when (val state = uiState) {
+                is UiState.Initial, is UiState.Loading -> HistoryDisplayState.Loading
+                is UiState.Error -> HistoryDisplayState.Error(state.message)
+                is UiState.Success -> {
+                    if (filteredItems.isEmpty()) {
+                        HistoryDisplayState.Empty
+                    } else {
+                        HistoryDisplayState.Items(filteredItems)
                     }
                 }
             }
+        }
 
-            AnimatedContent(
-                targetState = displayState,
-                transitionSpec = {
-                    fadeIn(animationSpec = tween(200)) + slideInVertically(
-                        animationSpec = tween(220, easing = FastOutSlowInEasing),
-                        initialOffsetY = { it / 8 }
-                    ) togetherWith fadeOut(animationSpec = tween(140))
-                },
-                modifier = Modifier.fillMaxSize()
-            ) { state ->
+        AnimatedContent(
+            targetState = displayState,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(200)) + slideInVertically(
+                    animationSpec = tween(220, easing = FastOutSlowInEasing),
+                    initialOffsetY = { it / 8 }
+                ) togetherWith fadeOut(animationSpec = tween(140))
+            },
+            modifier = Modifier.fillMaxSize()
+        ) { state ->
                 when (state) {
                     is HistoryDisplayState.Loading -> {
-                        LoadingShimmer(modifier = Modifier.padding(16.dp))
+                    HistoryLoadingList(topInset = listTopInset)
                     }
 
-                    is HistoryDisplayState.Empty -> {
+                is HistoryDisplayState.Empty -> {
+                    Box(modifier = Modifier.padding(top = listTopInset)) {
                         EmptyState(
                             title = "No History",
                             description = "No data available for the selected filters",
                             icon = Icons.Rounded.History
                         )
                     }
+                }
 
-                    is HistoryDisplayState.Items -> {
-                        HistoryList(
-                            items = state.items,
-                            expandedIds = expandedIds,
-                            onToggleExpand = { viewModel.toggleExpanded(it) }
-                        )
-                    }
+                is HistoryDisplayState.Items -> {
+                    HistoryList(
+                        items = state.items,
+                        expandedIds = expandedIds,
+                        onToggleExpand = { viewModel.toggleExpanded(it) },
+                        topInset = listTopInset
+                    )
+                }
 
-                    is HistoryDisplayState.Error -> {
+                is HistoryDisplayState.Error -> {
+                    Box(modifier = Modifier.padding(top = listTopInset)) {
                         ErrorView(
                             message = state.message,
                             onRetry = { viewModel.reloadHistory() }
@@ -114,6 +122,19 @@ fun HistoryScreen(
                 }
             }
         }
+
+        HistoryFilterCard(
+            filterState = filterState,
+            onPresetSelected = viewModel::applyPreset,
+            onStatusSelected = viewModel::updateStatusFilter,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(horizontal = 16.dp, vertical = filterCardVerticalPadding)
+                .onGloballyPositioned { coordinates ->
+                    filterCardHeight = with(density) { coordinates.size.height.toDp() }
+                }
+                .zIndex(1f)
+        )
     }
 }
 
@@ -121,12 +142,14 @@ fun HistoryScreen(
 private fun HistoryFilterCard(
     filterState: HistoryFilterState,
     onPresetSelected: (HistoryRangePreset) -> Unit,
-    onStatusSelected: (HistoryStatusFilter) -> Unit
+    onStatusSelected: (HistoryStatusFilter) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val surfaceTone = MaterialTheme.colorScheme.surface
     val variantTone = MaterialTheme.colorScheme.surfaceVariant
     val accentTone = MaterialTheme.colorScheme.primary
     val isLightSurface = surfaceTone.luminance() > 0.5f
+    val cardShape = RoundedCornerShape(22.dp)
     val cardGradient = if (isLightSurface) {
         Brush.linearGradient(
             colors = listOf(
@@ -146,13 +169,13 @@ private fun HistoryFilterCard(
     }
 
     GlassCard(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .clip(RoundedCornerShape(22.dp))
+            .shadow(8.dp, cardShape, clip = false)
+            .clip(cardShape)
             .glassAccentShimmer(accentTone),
         gradient = cardGradient,
-        elevation = 6.dp,
+        elevation = 2.dp,
         cornerRadius = 22.dp,
         padding = 18.dp
     ) {
@@ -241,19 +264,60 @@ private fun HistoryFilterCard(
 private fun HistoryList(
     items: List<UpsStatus>,
     expandedIds: Set<Long>,
-    onToggleExpand: (Long) -> Unit
+    onToggleExpand: (Long) -> Unit,
+    topInset: Dp
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        item {
+            Spacer(modifier = Modifier.height(topInset))
+        }
         items(items, key = { it.id ?: it.timestamp.toString() }) { status ->
             HistoryItem(
                 status = status,
                 isExpanded = status.id in expandedIds,
                 onToggle = { status.id?.let { onToggleExpand(it) } }
             )
+        }
+    }
+}
+
+@Composable
+private fun HistoryLoadingList(
+    topInset: Dp
+) {
+    val cardShape = RoundedCornerShape(22.dp)
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Spacer(modifier = Modifier.height(topInset))
+        }
+        items(3) {
+            GlassCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(10.dp, cardShape, clip = false)
+                    .clip(cardShape),
+                cornerRadius = 22.dp,
+                padding = 0.dp,
+                elevation = 2.dp
+            ) {
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            RoundedCornerShape(22.dp)
+                        )
+                )
+            }
         }
     }
 }
@@ -269,6 +333,7 @@ private fun HistoryItem(
     val onSurfaceTone = MaterialTheme.colorScheme.onSurface
     val accentTone = MaterialTheme.colorScheme.primary
     val isLightSurface = surfaceTone.luminance() > 0.5f
+    val cardShape = RoundedCornerShape(22.dp)
     val cardGradient = if (isLightSurface) {
         Brush.linearGradient(
             colors = listOf(
@@ -290,14 +355,15 @@ private fun HistoryItem(
     GlassCard(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
+            .shadow(10.dp, cardShape, clip = false)
+            .clip(cardShape)
             .glassAccentShimmer(accentTone, baseAlpha = 0.28f, highlightAlpha = 0.7f)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = LocalIndication.current
             ) { onToggle() },
         gradient = cardGradient,
-        elevation = 8.dp,
+        elevation = 2.dp,
         cornerRadius = 22.dp,
         padding = 18.dp
     ) {
