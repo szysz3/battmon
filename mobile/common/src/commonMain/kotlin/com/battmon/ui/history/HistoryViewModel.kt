@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.battmon.data.repository.UpsRepository
 import com.battmon.model.UpsStatus
 import com.battmon.ui.state.UiState
+import com.battmon.util.ErrorMessages
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -95,7 +96,7 @@ class HistoryViewModel(
                     UiState.Success(result.data.data)
                 }
                 is UiState.Error -> result
-                else -> UiState.Error("Unknown error")
+                else -> UiState.Error(ErrorMessages.UNKNOWN_ERROR)
             }
             if (result !is UiState.Success) {
                 _historyItems.value = emptyList()

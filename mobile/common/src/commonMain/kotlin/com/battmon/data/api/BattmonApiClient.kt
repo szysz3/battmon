@@ -1,5 +1,6 @@
 package com.battmon.data.api
 
+import com.battmon.config.AppConfig
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -8,8 +9,6 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 
 object BattmonApiClient {
-    private const val BASE_URL = "http://192.168.50.99:8080"
-
     val httpClient = HttpClient {
         install(ContentNegotiation) {
             json(Json {
@@ -19,18 +18,20 @@ object BattmonApiClient {
             })
         }
 
-        install(Logging) {
-            logger = Logger.DEFAULT
-            level = LogLevel.INFO
+        if (AppConfig.ENABLE_LOGGING) {
+            install(Logging) {
+                logger = Logger.DEFAULT
+                level = LogLevel.INFO
+            }
         }
 
         install(HttpTimeout) {
-            requestTimeoutMillis = 30000
-            connectTimeoutMillis = 30000
+            requestTimeoutMillis = AppConfig.NETWORK_TIMEOUT_MS
+            connectTimeoutMillis = AppConfig.NETWORK_TIMEOUT_MS
         }
 
         defaultRequest {
-            url(BASE_URL)
+            url(AppConfig.API_BASE_URL)
         }
     }
 }
