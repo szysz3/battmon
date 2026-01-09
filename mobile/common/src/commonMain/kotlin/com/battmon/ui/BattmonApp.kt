@@ -85,29 +85,59 @@ private fun BottomNavigationBar(
     onSelect: (Screen) -> Unit
 ) {
     val accentColor = MaterialTheme.colorScheme.primary
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp
+
+    // Subtle gradient background
+    val bottomBarGradient = Brush.verticalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.surfaceVariant,
+            MaterialTheme.colorScheme.surface
+        )
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(bottomBarGradient)
     ) {
-        Screen.items.forEach { screen ->
-            NavigationBarItem(
-                icon = {
-                    Icon(
-                        imageVector = screen.icon,
-                        contentDescription = screen.label
+        // Top shadow overlay
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.18f),
+                            Color.Transparent
+                        )
                     )
-                },
-                label = { Text(screen.label) },
-                selected = currentRoute == screen.route,
-                onClick = { onSelect(screen) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = accentColor,
-                    selectedTextColor = accentColor,
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    indicatorColor = accentColor.copy(alpha = 0.14f)
                 )
-            )
+        )
+
+        NavigationBar(
+            containerColor = Color.Transparent,
+            tonalElevation = 0.dp
+        ) {
+            Screen.items.forEach { screen ->
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            imageVector = screen.icon,
+                            contentDescription = screen.label
+                        )
+                    },
+                    label = { Text(screen.label) },
+                    selected = currentRoute == screen.route,
+                    onClick = { onSelect(screen) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = accentColor,
+                        selectedTextColor = accentColor,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        indicatorColor = accentColor.copy(alpha = 0.14f)
+                    )
+                )
+            }
         }
     }
 }
