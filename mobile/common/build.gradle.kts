@@ -76,7 +76,7 @@ kotlin {
 
 android {
     namespace = "com.battmon"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         minSdk = 28
     }
