@@ -23,10 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -44,9 +42,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.battmon.model.UpsStatus
 import com.battmon.ui.components.*
 import com.battmon.ui.state.UiState
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import com.battmon.ui.theme.filterCardGradient
+import com.battmon.ui.theme.historyItemGradient
+import com.battmon.util.DateTimeFormatter
 import kotlin.math.roundToInt
 
 @Composable
@@ -145,42 +143,21 @@ private fun HistoryFilterCard(
     onStatusSelected: (HistoryStatusFilter) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val surfaceTone = MaterialTheme.colorScheme.surface
-    val variantTone = MaterialTheme.colorScheme.surfaceVariant
     val accentTone = MaterialTheme.colorScheme.primary
-    val isLightSurface = surfaceTone.luminance() > 0.5f
     val cardShape = RoundedCornerShape(22.dp)
-    val cardGradient = if (isLightSurface) {
-        Brush.linearGradient(
-            colors = listOf(
-                lerp(surfaceTone, variantTone, 0.12f),
-                lerp(variantTone, accentTone, 0.07f),
-                lerp(surfaceTone, variantTone, 0.25f)
-            )
-        )
-    } else {
-        Brush.linearGradient(
-            colors = listOf(
-                surfaceTone.copy(alpha = 0.92f),
-                variantTone.copy(alpha = 0.85f),
-                surfaceTone.copy(alpha = 0.78f)
-            )
-        )
-    }
 
     GlassCard(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(8.dp, cardShape, clip = false)
-            .clip(cardShape)
+            .styledCard(cardShape, shadowElevation = 8.dp)
             .glassAccentShimmer(accentTone),
-        gradient = cardGradient,
+        gradient = filterCardGradient(accentTone),
         elevation = 2.dp,
         cornerRadius = 22.dp,
         padding = 18.dp
     ) {
         Column {
-            SectionLabel(text = "FILTER RANGE")
+            Label(text = "FILTER RANGE", variant = LabelVariant.SECTION)
 
             Row(
                 modifier = Modifier
@@ -219,7 +196,7 @@ private fun HistoryFilterCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            SectionLabel(text = "STATUS")
+            Label(text = "STATUS", variant = LabelVariant.SECTION)
 
             Row(
                 modifier = Modifier
@@ -237,8 +214,8 @@ private fun HistoryFilterCard(
                     )
                 )
                 FilterChip(
-                    selected = filterState.statusFilter == HistoryStatusFilter.POSITIVE,
-                    onClick = { onStatusSelected(HistoryStatusFilter.POSITIVE) },
+                    selected = filterState.statusFilter == HistoryStatusFilter.ONLINE,
+                    onClick = { onStatusSelected(HistoryStatusFilter.ONLINE) },
                     label = { Text("Online") },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = accentTone,
@@ -246,8 +223,8 @@ private fun HistoryFilterCard(
                     )
                 )
                 FilterChip(
-                    selected = filterState.statusFilter == HistoryStatusFilter.NEGATIVE,
-                    onClick = { onStatusSelected(HistoryStatusFilter.NEGATIVE) },
+                    selected = filterState.statusFilter == HistoryStatusFilter.OFFLINE_OR_ON_BATTERY,
+                    onClick = { onStatusSelected(HistoryStatusFilter.OFFLINE_OR_ON_BATTERY) },
                     label = { Text("Other") },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = accentTone,
@@ -328,41 +305,19 @@ private fun HistoryItem(
     isExpanded: Boolean,
     onToggle: () -> Unit
 ) {
-    val surfaceTone = MaterialTheme.colorScheme.surface
-    val variantTone = MaterialTheme.colorScheme.surfaceVariant
-    val onSurfaceTone = MaterialTheme.colorScheme.onSurface
     val accentTone = MaterialTheme.colorScheme.primary
-    val isLightSurface = surfaceTone.luminance() > 0.5f
     val cardShape = RoundedCornerShape(22.dp)
-    val cardGradient = if (isLightSurface) {
-        Brush.linearGradient(
-            colors = listOf(
-                lerp(surfaceTone, variantTone, 0.15f),
-                lerp(variantTone, accentTone, 0.08f),
-                lerp(surfaceTone, variantTone, 0.3f)
-            )
-        )
-    } else {
-        Brush.linearGradient(
-            colors = listOf(
-                surfaceTone.copy(alpha = 0.9f),
-                variantTone.copy(alpha = 0.86f),
-                surfaceTone.copy(alpha = 0.74f)
-            )
-        )
-    }
 
     GlassCard(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(10.dp, cardShape, clip = false)
-            .clip(cardShape)
+            .styledCard(cardShape)
             .glassAccentShimmer(accentTone, baseAlpha = 0.28f, highlightAlpha = 0.7f)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = LocalIndication.current
             ) { onToggle() },
-        gradient = cardGradient,
+        gradient = historyItemGradient(accentTone),
         elevation = 2.dp,
         cornerRadius = 22.dp,
         padding = 18.dp
@@ -379,13 +334,13 @@ private fun HistoryItem(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = formatTime(status.timestamp),
+                        text = DateTimeFormatter.formatTime(status.timestamp),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = formatDate(status.timestamp),
+                        text = DateTimeFormatter.formatDate(status.timestamp),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                         letterSpacing = 1.2.sp
@@ -445,7 +400,7 @@ private fun HistoryItem(
                     DetailRow("Record ID", status.id?.toString() ?: "N/A")
                     DetailRow(
                         "Timestamp",
-                        "${formatDate(status.timestamp)} ${formatTime(status.timestamp)}"
+                        DateTimeFormatter.formatDateTime(status.timestamp)
                     )
                 }
 
@@ -534,7 +489,7 @@ private fun ExpandedSection(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
-        SectionLabel(text = title)
+        Label(text = title, variant = LabelVariant.SECTION)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             content()
         }
@@ -561,31 +516,6 @@ private fun DetailRow(label: String, value: String) {
             modifier = Modifier.weight(0.9f)
         )
     }
-}
-
-private fun formatTime(instant: Instant): String {
-    val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-    val hours = localDateTime.hour.toString().padStart(2, '0')
-    val minutes = localDateTime.minute.toString().padStart(2, '0')
-    val seconds = localDateTime.second.toString().padStart(2, '0')
-    return "$hours:$minutes:$seconds"
-}
-
-private fun formatDate(instant: Instant): String {
-    val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-    return localDateTime.date.toString()
-}
-
-@Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
-        letterSpacing = 1.4.sp,
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
 }
 
 private sealed class HistoryDisplayState {

@@ -10,12 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -28,12 +23,9 @@ import com.battmon.ui.state.UiState
 import com.battmon.ui.theme.AccentPink
 import com.battmon.ui.theme.PrimaryBlue
 import com.battmon.ui.theme.SecondaryTeal
-import com.battmon.ui.theme.StatusOffline
-import com.battmon.ui.theme.StatusOnBattery
-import com.battmon.ui.theme.StatusOnline
-import com.battmon.ui.theme.StatusWarning
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import com.battmon.ui.theme.cardGradient
+import com.battmon.util.DateTimeFormatter
+import com.battmon.util.StatusMapper
 import kotlin.math.roundToInt
 
 @Composable
@@ -106,30 +98,22 @@ private fun DashboardContent(status: UpsStatus) {
 // Hero Status Card - Large, prominent display (Very Important)
 @Composable
 private fun HeroStatusCard(status: UpsStatus) {
-    val accent = statusAccentColor(status.status)
+    val accent = StatusMapper.getAccentColor(status.status)
     val cardText = MaterialTheme.colorScheme.onSurface
     val mutedText = MaterialTheme.colorScheme.onSurfaceVariant
     val cardShape = RoundedCornerShape(28.dp)
     GlassCard(
-        gradient = dashboardCardGradient(accent),
+        gradient = cardGradient(accent),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(10.dp, cardShape, clip = false)
-            .clip(cardShape)
-            .glassAccentShimmer(
-                accent = accent,
-                thickness = 2.dp,
-                baseAlpha = 0.22f,
-                highlightAlpha = 0.65f,
-                shimmerWidth = 52.dp,
-                drawOnTop = true
-            ),
+            .styledCard(cardShape)
+            .glassAccentShimmer(accent, drawOnTop = true),
         cornerRadius = 28.dp,
         padding = 26.dp,
         elevation = 2.dp
     ) {
         // Small title
-        CardLabel(text = "UPS STATUS", color = mutedText.copy(alpha = 0.9f))
+        Label(text = "UPS STATUS", color = mutedText.copy(alpha = 0.9f))
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -139,7 +123,7 @@ private fun HeroStatusCard(status: UpsStatus) {
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
-            text = "Updated ${formatTime(status.timestamp)}",
+            text = "Updated ${DateTimeFormatter.formatTime(status.timestamp)}",
             style = MaterialTheme.typography.bodySmall,
             color = mutedText.copy(alpha = 0.85f),
             fontSize = 12.sp
@@ -220,19 +204,11 @@ private fun ModernLoadCard(status: UpsStatus) {
     }
 
     GlassCard(
-        gradient = dashboardCardGradient(accent),
+        gradient = cardGradient(accent),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(10.dp, cardShape, clip = false)
-            .clip(cardShape)
-            .glassAccentShimmer(
-                accent = accent,
-                thickness = 2.dp,
-                baseAlpha = 0.22f,
-                highlightAlpha = 0.65f,
-                shimmerWidth = 52.dp,
-                drawOnTop = true
-            ),
+            .styledCard(cardShape)
+            .glassAccentShimmer(accent, drawOnTop = true),
         cornerRadius = 24.dp,
         padding = 22.dp,
         elevation = 2.dp
@@ -247,7 +223,7 @@ private fun ModernLoadCard(status: UpsStatus) {
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                CardLabel(text = "CURRENT LOAD", color = mutedText.copy(alpha = 0.9f))
+                Label(text = "CURRENT LOAD", color = mutedText.copy(alpha = 0.9f))
 
                 Text(
                     text = "$loadPercent%",
@@ -309,24 +285,16 @@ private fun CompactBatteryCard(status: UpsStatus) {
     val cardShape = RoundedCornerShape(22.dp)
 
     GlassCard(
-        gradient = dashboardCardGradient(accent),
+        gradient = cardGradient(accent),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(10.dp, cardShape, clip = false)
-            .clip(cardShape)
-            .glassAccentShimmer(
-                accent = accent,
-                thickness = 2.dp,
-                baseAlpha = 0.22f,
-                highlightAlpha = 0.65f,
-                shimmerWidth = 52.dp,
-                drawOnTop = true
-            ),
+            .styledCard(cardShape)
+            .glassAccentShimmer(accent, drawOnTop = true),
         cornerRadius = 22.dp,
         padding = 18.dp,
         elevation = 2.dp
     ) {
-        CardLabel(text = "BATTERY", color = mutedText.copy(alpha = 0.9f))
+        Label(text = "BATTERY", color = mutedText.copy(alpha = 0.9f))
 
         Spacer(modifier = Modifier.height(14.dp))
 
@@ -361,24 +329,16 @@ private fun CompactTimeCard(status: UpsStatus) {
     val cardShape = RoundedCornerShape(22.dp)
 
     GlassCard(
-        gradient = dashboardCardGradient(accent),
+        gradient = cardGradient(accent),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(10.dp, cardShape, clip = false)
-            .clip(cardShape)
-            .glassAccentShimmer(
-                accent = accent,
-                thickness = 2.dp,
-                baseAlpha = 0.22f,
-                highlightAlpha = 0.65f,
-                shimmerWidth = 52.dp,
-                drawOnTop = true
-            ),
+            .styledCard(cardShape)
+            .glassAccentShimmer(accent, drawOnTop = true),
         cornerRadius = 22.dp,
         padding = 18.dp,
         elevation = 2.dp
     ) {
-        CardLabel(text = "TIME LEFT", color = mutedText.copy(alpha = 0.9f))
+        Label(text = "TIME LEFT", color = mutedText.copy(alpha = 0.9f))
 
         Spacer(modifier = Modifier.height(14.dp))
 
@@ -400,52 +360,5 @@ private fun CompactTimeCard(status: UpsStatus) {
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium
         )
-    }
-}
-
-@Composable
-private fun CardLabel(text: String, color: Color) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.SemiBold,
-        color = color,
-        fontSize = 10.sp,
-        letterSpacing = 1.4.sp
-    )
-}
-
-private fun formatTime(instant: kotlinx.datetime.Instant): String {
-    val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-    val hours = localDateTime.hour.toString().padStart(2, '0')
-    val minutes = localDateTime.minute.toString().padStart(2, '0')
-    val seconds = localDateTime.second.toString().padStart(2, '0')
-    return "$hours:$minutes:$seconds"
-}
-
-@Composable
-private fun dashboardCardGradient(accent: Color): Brush {
-    val surface = MaterialTheme.colorScheme.surface
-    val variant = MaterialTheme.colorScheme.surfaceVariant
-    val isLightSurface = surface.luminance() > 0.5f
-    val midBlend = if (isLightSurface) 0.16f else 0.1f
-    val endBlend = if (isLightSurface) 0.3f else 0.24f
-    return Brush.linearGradient(
-        colors = listOf(
-            lerp(surface, variant, 0.12f),
-            lerp(variant, accent, midBlend),
-            lerp(surface, variant, endBlend)
-        )
-    )
-}
-
-private fun statusAccentColor(status: String): Color {
-    val normalized = status.uppercase()
-    return when {
-        normalized.contains("ONLINE") -> StatusOnline
-        normalized.contains("ONBATT") -> StatusOnBattery
-        normalized.contains("LOWBATT") -> StatusOnBattery
-        normalized.contains("COMMLOST") -> StatusOffline
-        else -> StatusWarning
     }
 }

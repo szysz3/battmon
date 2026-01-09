@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.battmon.ui.theme.*
+import com.battmon.util.StatusMapper
 
 @Composable
 fun StatusBadge(
@@ -19,14 +19,9 @@ fun StatusBadge(
     modifier: Modifier = Modifier,
     large: Boolean = false
 ) {
-    val normalized = status.uppercase()
-    val (color, text) = when {
-        normalized.contains("ONLINE") -> StatusOnline to "Online"
-        normalized.contains("ONBATT") -> StatusOnBattery to "On Battery"
-        normalized.contains("LOWBATT") -> StatusOnBattery to "Low Battery"
-        normalized.contains("COMMLOST") -> StatusOffline to "Comm Lost"
-        else -> StatusWarning to status
-    }
+    val statusInfo = StatusMapper.mapStatus(status)
+    val color = statusInfo.color
+    val text = statusInfo.label
 
     val fontSize = if (large) 17.sp else 13.sp
     val horizontalPadding = if (large) 20.dp else 12.dp

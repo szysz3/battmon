@@ -10,8 +10,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class DashboardViewModel : ViewModel() {
-    private val repository = UpsRepository()
+class DashboardViewModel(
+    private val repository: UpsRepository = UpsRepository()
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState<UpsStatus>>(UiState.Initial)
     val uiState: StateFlow<UiState<UpsStatus>> = _uiState.asStateFlow()

@@ -18,7 +18,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
@@ -38,8 +37,8 @@ enum class HistoryRangePreset {
 
 enum class HistoryStatusFilter {
     ALL,
-    POSITIVE,
-    NEGATIVE
+    ONLINE,
+    OFFLINE_OR_ON_BATTERY
 }
 
 data class HistoryFilterState(
@@ -47,15 +46,9 @@ data class HistoryFilterState(
     val statusFilter: HistoryStatusFilter
 )
 
-private data class HistoryRange(
-    val fromDate: LocalDate,
-    val toDate: LocalDate,
-    val fromTime: String,
-    val toTime: String
-)
-
-class HistoryViewModel : ViewModel() {
-    private val repository = UpsRepository()
+class HistoryViewModel(
+    private val repository: UpsRepository = UpsRepository()
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState<List<UpsStatus>>>(UiState.Initial)
     val uiState: StateFlow<UiState<List<UpsStatus>>> = _uiState.asStateFlow()
@@ -81,13 +74,13 @@ class HistoryViewModel : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     init {
-        val range = rangeForPreset(HistoryRangePreset.LAST_24_HOURS)
-        loadHistoryForRange(range.fromDate, range.toDate, range.fromTime, range.toTime)
+        val (from, to) = rangeForPreset(HistoryRangePreset.LAST_24_HOURS)
+        loadHistory(from, to)
     }
 
     fun reloadHistory() {
-        val range = rangeForPreset(_filterState.value.selectedPreset)
-        loadHistoryForRange(range.fromDate, range.toDate, range.fromTime, range.toTime)
+        val (from, to) = rangeForPreset(_filterState.value.selectedPreset)
+        loadHistory(from, to)
     }
 
     fun loadHistory(from: Instant, to: Instant) {
@@ -111,9 +104,9 @@ class HistoryViewModel : ViewModel() {
     }
 
     fun applyPreset(preset: HistoryRangePreset) {
-        val range = rangeForPreset(preset)
         _filterState.value = _filterState.value.copy(selectedPreset = preset)
-        loadHistoryForRange(range.fromDate, range.toDate, range.fromTime, range.toTime)
+        val (from, to) = rangeForPreset(preset)
+        loadHistory(from, to)
     }
 
     fun updateStatusFilter(filter: HistoryStatusFilter) {
@@ -128,72 +121,30 @@ class HistoryViewModel : ViewModel() {
         }
     }
 
-    private fun loadHistoryForRange(
-        fromDate: LocalDate,
-        toDate: LocalDate,
-        fromTime: String,
-        toTime: String
-    ) {
-        val timeZone = TimeZone.currentSystemDefault()
-        val fromTimeParsed = LocalTime.parse(fromTime)
-        val toTimeParsed = LocalTime.parse(toTime)
-        val fromDateTime = LocalDateTime(
-            fromDate.year,
-            fromDate.monthNumber,
-            fromDate.dayOfMonth,
-            fromTimeParsed.hour,
-            fromTimeParsed.minute
-        )
-        val toDateTime = LocalDateTime(
-            toDate.year,
-            toDate.monthNumber,
-            toDate.dayOfMonth,
-            toTimeParsed.hour,
-            toTimeParsed.minute
-        )
-        val from = fromDateTime.toInstant(timeZone)
-        val to = toDateTime
-            .toInstant(timeZone)
-            .plus(1.minutes)
-            .minus(1.milliseconds)
-        loadHistory(from, to)
-    }
-
-    private fun rangeForPreset(preset: HistoryRangePreset): HistoryRange {
+    private fun rangeForPreset(preset: HistoryRangePreset): Pair<Instant, Instant> {
         val timeZone = TimeZone.currentSystemDefault()
         val now = Clock.System.now()
         return when (preset) {
             HistoryRangePreset.LAST_24_HOURS -> {
-                val toDateTime = now.toLocalDateTime(timeZone)
-                val fromDateTime = now.minus(24.hours).toLocalDateTime(timeZone)
-                HistoryRange(
-                    fromDate = fromDateTime.date,
-                    toDate = toDateTime.date,
-                    fromTime = formatTime(fromDateTime.time),
-                    toTime = formatTime(toDateTime.time)
-                )
+                val from = now.minus(24.hours)
+                val to = now.plus(1.minutes).minus(1.milliseconds)
+                from to to
             }
             HistoryRangePreset.LAST_7_DAYS -> {
                 val today = now.toLocalDateTime(timeZone).date
                 val fromDate = today.minus(6, DateTimeUnit.DAY)
-                HistoryRange(fromDate, today, defaultFromTime(), defaultToTime())
+                val from = LocalDateTime(fromDate, LocalTime(0, 0)).toInstant(timeZone)
+                val to = LocalDateTime(today, LocalTime(23, 59)).toInstant(timeZone).plus(1.minutes).minus(1.milliseconds)
+                from to to
             }
             HistoryRangePreset.LAST_30_DAYS -> {
                 val today = now.toLocalDateTime(timeZone).date
                 val fromDate = today.minus(29, DateTimeUnit.DAY)
-                HistoryRange(fromDate, today, defaultFromTime(), defaultToTime())
+                val from = LocalDateTime(fromDate, LocalTime(0, 0)).toInstant(timeZone)
+                val to = LocalDateTime(today, LocalTime(23, 59)).toInstant(timeZone).plus(1.minutes).minus(1.milliseconds)
+                from to to
             }
         }
-    }
-
-    private fun defaultFromTime() = "00:00"
-
-    private fun defaultToTime() = "23:59"
-
-    private fun formatTime(time: LocalTime): String {
-        val hour = time.hour.toString().padStart(2, '0')
-        val minute = time.minute.toString().padStart(2, '0')
-        return "$hour:$minute"
     }
 
     private fun matchesStatusFilter(status: UpsStatus, filter: HistoryStatusFilter): Boolean {
@@ -201,8 +152,8 @@ class HistoryViewModel : ViewModel() {
         val isOnline = normalized.contains("online")
         return when (filter) {
             HistoryStatusFilter.ALL -> true
-            HistoryStatusFilter.POSITIVE -> isOnline
-            HistoryStatusFilter.NEGATIVE -> !isOnline
+            HistoryStatusFilter.ONLINE -> isOnline
+            HistoryStatusFilter.OFFLINE_OR_ON_BATTERY -> !isOnline
         }
     }
 }
