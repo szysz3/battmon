@@ -13,6 +13,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -167,17 +168,29 @@ private fun HistoryFilterCard(
                 FilterChip(
                     selected = filterState.selectedPreset == HistoryRangePreset.LAST_24_HOURS,
                     onClick = { onPresetSelected(HistoryRangePreset.LAST_24_HOURS) },
-                    label = { Text("Last 24h") }
+                    label = { Text("Last 24h") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = accentTone,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 )
                 FilterChip(
                     selected = filterState.selectedPreset == HistoryRangePreset.LAST_7_DAYS,
                     onClick = { onPresetSelected(HistoryRangePreset.LAST_7_DAYS) },
-                    label = { Text("Last 7d") }
+                    label = { Text("Last 7d") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = accentTone,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 )
                 FilterChip(
                     selected = filterState.selectedPreset == HistoryRangePreset.LAST_30_DAYS,
                     onClick = { onPresetSelected(HistoryRangePreset.LAST_30_DAYS) },
-                    label = { Text("Last 30d") }
+                    label = { Text("Last 30d") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = accentTone,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 )
             }
 
@@ -194,17 +207,29 @@ private fun HistoryFilterCard(
                 FilterChip(
                     selected = filterState.statusFilter == HistoryStatusFilter.ALL,
                     onClick = { onStatusSelected(HistoryStatusFilter.ALL) },
-                    label = { Text("All") }
+                    label = { Text("All") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = accentTone,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 )
                 FilterChip(
                     selected = filterState.statusFilter == HistoryStatusFilter.POSITIVE,
                     onClick = { onStatusSelected(HistoryStatusFilter.POSITIVE) },
-                    label = { Text("Online") }
+                    label = { Text("Online") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = accentTone,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 )
                 FilterChip(
                     selected = filterState.statusFilter == HistoryStatusFilter.NEGATIVE,
                     onClick = { onStatusSelected(HistoryStatusFilter.NEGATIVE) },
-                    label = { Text("Other") }
+                    label = { Text("Other") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = accentTone,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 )
             }
         }

@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import com.battmon.ui.dashboard.DashboardScreen
 import com.battmon.ui.history.HistoryScreen
 import com.battmon.ui.navigation.Screen
-import com.battmon.ui.settings.SettingsScreen
 
 @Composable
 fun BattmonApp() {
@@ -73,7 +72,6 @@ fun BattmonApp() {
                 when (it) {
                     Screen.Dashboard.route -> DashboardScreen()
                     Screen.History.route -> HistoryScreen()
-                    Screen.Settings.route -> SettingsScreen()
                     else -> DashboardScreen()
                 }
             }
@@ -86,6 +84,7 @@ private fun BottomNavigationBar(
     currentRoute: String,
     onSelect: (Screen) -> Unit
 ) {
+    val accentColor = MaterialTheme.colorScheme.primary
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp
@@ -102,11 +101,11 @@ private fun BottomNavigationBar(
                 selected = currentRoute == screen.route,
                 onClick = { onSelect(screen) },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    selectedIconColor = accentColor,
+                    selectedTextColor = accentColor,
                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                    indicatorColor = accentColor.copy(alpha = 0.14f)
                 )
             )
         }
