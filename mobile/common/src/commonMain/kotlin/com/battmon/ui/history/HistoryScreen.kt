@@ -13,6 +13,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -48,6 +52,7 @@ import com.battmon.util.DateTimeFormatter
 import kotlin.math.roundToInt
 
 @Composable
+@OptIn(ExperimentalMaterialApi::class)
 fun HistoryScreen(
     viewModel: HistoryViewModel = viewModel { HistoryViewModel() }
 ) {
@@ -55,13 +60,22 @@ fun HistoryScreen(
     val expandedIds by viewModel.expandedIds.collectAsState()
     val filterState by viewModel.filterState.collectAsState()
     val filteredItems by viewModel.filteredItems.collectAsState()
+    val isRefreshing = uiState is UiState.Loading
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isRefreshing,
+        onRefresh = { viewModel.reloadHistory() }
+    )
     val density = LocalDensity.current
     val listItemSpacing = 14.dp
     val filterCardVerticalPadding = 12.dp
     var filterCardHeight by remember { mutableStateOf(0.dp) }
     val listTopInset = filterCardHeight + listItemSpacing
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
+    ) {
         val displayState = remember(uiState, filteredItems) {
             when (val state = uiState) {
                 is UiState.Initial, is UiState.Loading -> HistoryDisplayState.Loading
@@ -120,6 +134,16 @@ fun HistoryScreen(
                 }
             }
         }
+
+        PullRefreshIndicator(
+            refreshing = isRefreshing,
+            state = pullRefreshState,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = listTopInset),
+            contentColor = MaterialTheme.colorScheme.primary,
+            backgroundColor = MaterialTheme.colorScheme.surfaceVariant
+        )
 
         HistoryFilterCard(
             filterState = filterState,

@@ -6,6 +6,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,16 +33,26 @@ import com.battmon.util.StatusMapper
 import kotlin.math.roundToInt
 
 @Composable
+@OptIn(ExperimentalMaterialApi::class)
 fun DashboardScreen(
     viewModel: DashboardViewModel = viewModel { DashboardViewModel() }
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val isRefreshing = uiState is UiState.Loading
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isRefreshing,
+        onRefresh = { viewModel.refresh() }
+    )
 
     LaunchedEffect(Unit) {
         viewModel.refresh()
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
+    ) {
         when (val state = uiState) {
             is UiState.Initial, is UiState.Loading -> {
                 LoadingShimmer(modifier = Modifier.padding(16.dp))
@@ -55,6 +69,14 @@ fun DashboardScreen(
                 )
             }
         }
+
+        PullRefreshIndicator(
+            refreshing = isRefreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            contentColor = MaterialTheme.colorScheme.primary,
+            backgroundColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     }
 }
 
