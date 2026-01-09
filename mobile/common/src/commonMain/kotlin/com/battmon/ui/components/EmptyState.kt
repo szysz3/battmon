@@ -2,7 +2,7 @@ package com.battmon.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Inbox
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 fun EmptyState(
     title: String,
     description: String,
-    icon: ImageVector = Icons.Rounded.Inbox,
+    icon: ImageVector = Icons.Filled.Info,
     modifier: Modifier = Modifier
 ) {
     Box(

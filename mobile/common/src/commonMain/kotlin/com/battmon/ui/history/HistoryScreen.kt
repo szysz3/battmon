@@ -37,11 +37,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.ExpandLess
-import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.List
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.battmon.model.UpsStatus
 import com.battmon.ui.components.*
@@ -102,7 +102,7 @@ fun HistoryScreen(
         ) { state ->
                 when (state) {
                     is HistoryDisplayState.Loading -> {
-                    HistoryLoadingList(topInset = listTopInset)
+                        HistoryLoadingList(topInset = listTopInset)
                     }
 
                 is HistoryDisplayState.Empty -> {
@@ -110,7 +110,7 @@ fun HistoryScreen(
                         EmptyState(
                             title = "No History",
                             description = "No data available for the selected filters",
-                            icon = Icons.Rounded.History
+                            icon = Icons.AutoMirrored.Filled.List
                         )
                     }
                 }
@@ -382,7 +382,7 @@ private fun HistoryItem(
                     )
                 ) {
                     Icon(
-                        imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                        imageVector = if (isExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                         contentDescription = if (isExpanded) "Collapse" else "Expand",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                         modifier = Modifier.padding(6.dp)

@@ -54,10 +54,12 @@ object StatusMapper {
         return mapStatus(status).color
     }
 
+    @Suppress("unused")
     fun getLabel(status: String): String {
         return mapStatus(status).label
     }
 
+    @Suppress("unused")
     fun getCategory(status: String): StatusCategory {
         return mapStatus(status).category
     }

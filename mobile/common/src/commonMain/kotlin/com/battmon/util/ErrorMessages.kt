@@ -8,6 +8,7 @@ package com.battmon.util
  * - Easy to update messages in one place
  * - Preparation for future localization
  */
+@Suppress("unused")
 object ErrorMessages {
     // Network errors
     const val FAILED_TO_LOAD_STATUS = "Failed to load UPS status. Please check your connection."

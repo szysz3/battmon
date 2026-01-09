@@ -41,33 +41,33 @@ kotlin {
             implementation(compose.components.resources)
 
             // Networking
-            implementation("io.ktor:ktor-client-core:3.3.2")
-            implementation("io.ktor:ktor-client-content-negotiation:3.3.2")
-            implementation("io.ktor:ktor-serialization-kotlinx-json:3.3.2")
-            implementation("io.ktor:ktor-client-logging:3.3.2")
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.ktor.client.logging)
 
             // DateTime
-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+            implementation(libs.kotlinx.datetime)
 
             // Coroutines
-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+            implementation(libs.kotlinx.coroutines.core)
 
             // Navigation
-            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha10")
+            implementation(libs.androidx.navigation.compose)
 
             // ViewModel multiplatform (align with navigation-compose 2.8.0-alpha10 deps)
-            implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.8.2")
+            implementation(libs.androidx.lifecycle.viewmodel.compose)
 
             // SavedState (align with navigation-compose 2.8.0-alpha10 deps)
-            implementation("org.jetbrains.androidx.savedstate:savedstate:1.2.2")
+            implementation(libs.androidx.savedstate)
         }
 
         androidMain.dependencies {
-            implementation("io.ktor:ktor-client-okhttp:3.3.2")
+            implementation(libs.ktor.client.okhttp)
         }
 
         iosMain.dependencies {
-            implementation("io.ktor:ktor-client-darwin:3.3.2")
+            implementation(libs.ktor.client.darwin)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 
 // Spacing tokens
+@Suppress("unused")
 object Spacing {
     val xs = 8.dp
     val sm = 12.dp
@@ -25,6 +26,7 @@ object Spacing {
 }
 
 // Corner radius tokens
+@Suppress("unused")
 object CornerRadius {
     val small = 12.dp
     val medium = 16.dp
@@ -35,6 +37,7 @@ object CornerRadius {
 }
 
 // Elevation tokens
+@Suppress("unused")
 object Elevation {
     val none = 0.dp
     val low = 2.dp

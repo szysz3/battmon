@@ -15,6 +15,7 @@ object DateTimeFormatter {
         return "$hours:$minutes:$seconds"
     }
 
+    @Suppress("unused")
     fun formatTime(time: LocalTime): String {
         val hour = time.hour.toString().padStart(2, '0')
         val minute = time.minute.toString().padStart(2, '0')
