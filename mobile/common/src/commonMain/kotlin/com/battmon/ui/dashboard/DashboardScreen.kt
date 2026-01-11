@@ -1,5 +1,6 @@
 package com.battmon.ui.dashboard
 
+import androidx.compose.animation.*
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -52,20 +53,39 @@ fun DashboardScreen(
             .fillMaxSize()
             .pullRefresh(pullRefreshState)
     ) {
-        when (val state = uiState) {
-            is UiState.Initial, is UiState.Loading -> {
-                LoadingShimmer(modifier = Modifier.padding(16.dp))
+        val displayState = remember(uiState) {
+            when (val state = uiState) {
+                is UiState.Initial, is UiState.Loading -> DashboardDisplayState.Loading
+                is UiState.Success -> DashboardDisplayState.Success(state.data)
+                is UiState.Error -> DashboardDisplayState.Error(state.message)
             }
+        }
 
-            is UiState.Success -> {
-                DashboardContent(status = state.data)
-            }
+        AnimatedContent(
+            targetState = displayState,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(200)) + slideInVertically(
+                    animationSpec = tween(220, easing = FastOutSlowInEasing),
+                    initialOffsetY = { it / 8 }
+                ) togetherWith fadeOut(animationSpec = tween(140))
+            },
+            modifier = Modifier.fillMaxSize()
+        ) { state ->
+            when (state) {
+                is DashboardDisplayState.Loading -> {
+                    LoadingShimmer(modifier = Modifier.padding(16.dp))
+                }
 
-            is UiState.Error -> {
-                ErrorView(
-                    message = state.message,
-                    onRetry = { viewModel.refresh() }
-                )
+                is DashboardDisplayState.Success -> {
+                    DashboardContent(status = state.status)
+                }
+
+                is DashboardDisplayState.Error -> {
+                    ErrorView(
+                        message = state.message,
+                        onRetry = { viewModel.refresh() }
+                    )
+                }
             }
         }
 
@@ -77,6 +97,12 @@ fun DashboardScreen(
             backgroundColor = MaterialTheme.colorScheme.surfaceVariant
         )
     }
+}
+
+private sealed class DashboardDisplayState {
+    data object Loading : DashboardDisplayState()
+    data class Success(val status: UpsStatus) : DashboardDisplayState()
+    data class Error(val message: String) : DashboardDisplayState()
 }
 
 @Composable
