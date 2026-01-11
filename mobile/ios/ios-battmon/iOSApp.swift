@@ -4,6 +4,7 @@ import Firebase
 @main
 struct iOSApp: App {
 	@UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+	@Environment(\.scenePhase) private var scenePhase
 
 	var body: some Scene {
 		WindowGroup {
@@ -11,7 +12,19 @@ struct iOSApp: App {
 				.onAppear {
 					// Initialize notification service
 					NotificationServiceBridge.shared.initialize()
+					clearBadge()
 				}
+				.onChange(of: scenePhase) { phase in
+					if phase == .active {
+						clearBadge()
+					}
+				}
+		}
+	}
+
+	private func clearBadge() {
+		DispatchQueue.main.async {
+			UIApplication.shared.applicationIconBadgeNumber = 0
 		}
 	}
 }
