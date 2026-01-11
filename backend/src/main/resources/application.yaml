@@ -18,3 +18,7 @@ ups:
   monitor:
     pollIntervalSeconds: ${UPS_POLL_INTERVAL:5}
     command: "${UPS_COMMAND:apcaccess status}"
+
+firebase:
+  serviceAccountPath: "${FIREBASE_SERVICE_ACCOUNT_PATH:backend/firebase-credentials.json}"
+  enabled: ${FIREBASE_ENABLED:true}

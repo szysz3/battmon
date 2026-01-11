@@ -1,6 +1,7 @@
 package com.battmon.service
 
 import com.battmon.database.UpsStatusRepository
+import com.battmon.model.UpsStatus
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader
@@ -9,10 +10,12 @@ import java.io.InputStreamReader
 class UpsMonitorService(
     private val repository: UpsStatusRepository,
     private val pollIntervalSeconds: Long = 5,
-    private val apcAccessCommand: String = "apcaccess status"
+    private val apcAccessCommand: String = "apcaccess status",
+    private val fcmService: FcmNotificationService? = null
 ) {
     private val logger = LoggerFactory.getLogger(UpsMonitorService::class.java)
     private var monitorJob: Job? = null
+    private var lastStatus: String? = null
 
     fun start(scope: CoroutineScope) {
         if (monitorJob?.isActive == true) {
@@ -46,6 +49,30 @@ class UpsMonitorService(
         val status = ApcAccessParser.parse(output)
         repository.insert(status)
         logger.debug("Stored UPS status: ${status.status}")
+
+        // Check for status changes and send notifications
+        checkStatusAndNotify(status)
+    }
+
+    private suspend fun checkStatusAndNotify(status: UpsStatus) {
+        val currentStatus = status.status.uppercase()
+        val previousStatus = lastStatus
+
+        // Check if status changed to non-ONLINE
+        val isCurrentlyOffline = !currentStatus.contains("ONLINE")
+        val wasOnlineOrUnknown = previousStatus == null || previousStatus.contains("ONLINE")
+
+        if (isCurrentlyOffline && wasOnlineOrUnknown) {
+            logger.warn("UPS status changed from ${previousStatus ?: "unknown"} to $currentStatus - sending notification")
+            fcmService?.sendStatusAlert(status)
+        } else if (isCurrentlyOffline && !wasOnlineOrUnknown) {
+            logger.debug("UPS still offline: $currentStatus (was: $previousStatus)")
+        } else if (!isCurrentlyOffline && previousStatus != null && !previousStatus.contains("ONLINE")) {
+            logger.info("UPS status recovered from $previousStatus to $currentStatus")
+            fcmService?.sendRecoveryAlert(status, previousStatus)
+        }
+
+        lastStatus = currentStatus
     }
 
     private fun executeApcAccess(): String {

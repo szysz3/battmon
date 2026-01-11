@@ -15,6 +15,7 @@ Thumbs.db
 
 # Local config
 local.properties
+.claude/
 
 # IDE
 .idea/
@@ -30,3 +31,8 @@ logs/
 **/DerivedData/
 **/*.xcworkspace/
 **/xcuserdata/
+
+# Firebase credentials (NEVER commit these!)
+GoogleService-Info.plist
+firebase-credentials.json
+**/firebase-credentials*.json

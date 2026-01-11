@@ -38,8 +38,9 @@ object DatabaseFactory {
         )
 
         transaction(database) {
-            // Create table
+            // Create tables
             SchemaUtils.create(UpsStatusTable)
+            SchemaUtils.create(DeviceTokenTable)
 
             // Create indexes for common queries
             exec(

@@ -1,10 +1,14 @@
 package com.battmon
 
 import com.battmon.config.DatabaseConfig
+import com.battmon.config.FirebaseConfig
 import com.battmon.config.UpsMonitorConfig
 import com.battmon.database.DatabaseFactory
+import com.battmon.database.DeviceTokenRepository
 import com.battmon.database.UpsStatusRepository
 import com.battmon.plugins.configureSerialization
+import com.battmon.routes.configureNotificationRoutes
+import com.battmon.service.FcmNotificationService
 import com.battmon.service.RetentionService
 import com.battmon.service.UpsMonitorService
 import io.ktor.server.application.*
@@ -33,6 +37,11 @@ fun Application.module() {
     val retentionDays = environment.config.property("database.retentionDays").getString().toInt()
     val retentionIntervalHours = environment.config.property("database.retentionIntervalHours").getString().toLong()
 
+    val firebaseConfig = FirebaseConfig(
+        serviceAccountPath = environment.config.property("firebase.serviceAccountPath").getString(),
+        enabled = environment.config.property("firebase.enabled").getString().toBoolean()
+    )
+
     // Initialize database
     DatabaseFactory.init(
         jdbcUrl = dbConfig.jdbcUrl,
@@ -42,19 +51,30 @@ fun Application.module() {
         maxPoolSize = dbConfig.maxPoolSize
     )
 
-    // Create repository
+    // Create repositories
     val repository = UpsStatusRepository()
+    val deviceTokenRepository = DeviceTokenRepository()
+
+    // Initialize Firebase
+    val fcmService = FcmNotificationService(
+        deviceTokenRepository = deviceTokenRepository,
+        serviceAccountPath = firebaseConfig.serviceAccountPath,
+        enabled = firebaseConfig.enabled
+    )
+    fcmService.initialize()
 
     // Configure plugins
     configureSerialization()
     configureRouting(repository)
+    configureNotificationRoutes(deviceTokenRepository, fcmService)
 
     // Start UPS monitor
     val monitorScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     val monitorService = UpsMonitorService(
         repository = repository,
         pollIntervalSeconds = upsConfig.pollIntervalSeconds,
-        apcAccessCommand = upsConfig.command
+        apcAccessCommand = upsConfig.command,
+        fcmService = fcmService
     )
     val retentionService = RetentionService(
         repository = repository,

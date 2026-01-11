@@ -49,6 +49,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.datetime)
 
+    // Firebase Admin SDK
+    implementation("com.google.firebase:firebase-admin:9.4.2")
+
     // Logging
     implementation("ch.qos.logback:logback-classic:$logback_version")
 

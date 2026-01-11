@@ -1,9 +1,11 @@
 package com.battmon.data.api
 
+import com.battmon.model.DeviceTokenRequest
 import com.battmon.model.UpsStatus
 import com.battmon.model.UpsStatusHistory
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.http.*
 import kotlinx.datetime.Instant
 
 class BattmonApi {
@@ -18,5 +20,44 @@ class BattmonApi {
             parameter("from", from.toString())
             parameter("to", to.toString())
         }.body()
+    }
+
+    suspend fun registerDeviceToken(request: DeviceTokenRequest): Boolean {
+        return try {
+            val response = client.post("/notifications/register") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+            response.status.isSuccess()
+        } catch (e: Exception) {
+            println("Failed to register device token: ${e.message}")
+            false
+        }
+    }
+
+    suspend fun unregisterDeviceToken(fcmToken: String): Boolean {
+        return try {
+            val response = client.delete("/notifications/unregister") {
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("fcmToken" to fcmToken))
+            }
+            response.status.isSuccess()
+        } catch (e: Exception) {
+            println("Failed to unregister device token: ${e.message}")
+            false
+        }
+    }
+
+    suspend fun sendTestNotification(fcmToken: String): Boolean {
+        return try {
+            val response = client.post("/notifications/test") {
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("fcmToken" to fcmToken))
+            }
+            response.status.isSuccess()
+        } catch (e: Exception) {
+            println("Failed to send test notification: ${e.message}")
+            false
+        }
     }
 }
