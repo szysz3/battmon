@@ -5,9 +5,34 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
-        android:fillColor="#0F4C5C"
-        android:pathData="M54,4A50,50 0 1,0 54,104A50,50 0 1,0 54,4Z" />
+        android:fillColor="#0B1220"
+        android:pathData="M0,0H108V108H0Z" />
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M58,18L34,62H50L44,90L78,46H62Z" />
+        android:fillColor="#1C2A44"
+        android:fillAlpha="0.6"
+        android:pathData="M54,8A46,46 0 1,1 53.99,8Z" />
+    <path
+        android:fillColor="#F6C453"
+        android:pathData="M30,28H78A12,12 0 0 1 90,40V68A12,12 0 0 1 78,80H30A12,12 0 0 1 18,68V40A12,12 0 0 1 30,28Z" />
+    <path
+        android:fillColor="#E9B84A"
+        android:pathData="M33,31H75A9,9 0 0 1 84,40V68A9,9 0 0 1 75,77H33A9,9 0 0 1 24,68V40A9,9 0 0 1 33,31Z" />
+    <path
+        android:fillColor="#FFF1B0"
+        android:fillAlpha="0.4"
+        android:pathData="M34,34H74A7,7 0 0 1 81,41V46A7,7 0 0 1 74,53H34A7,7 0 0 1 27,46V41A7,7 0 0 1 34,34Z" />
+    <path
+        android:fillColor="#D28E2A"
+        android:fillAlpha="0.35"
+        android:pathData="M34,68H74A6,6 0 0 1 80,74V76A6,6 0 0 1 74,82H34A6,6 0 0 1 28,76V74A6,6 0 0 1 34,68Z" />
+    <path
+        android:fillColor="#F1B84A"
+        android:pathData="M93,45H96A3,3 0 0 1 99,48V60A3,3 0 0 1 96,63H93A3,3 0 0 1 90,60V48A3,3 0 0 1 93,45Z" />
+    <path
+        android:fillColor="#4DD0E1"
+        android:fillAlpha="0.25"
+        android:pathData="M20.74,59.06L29.85,47.68L38.97,54.5L45.8,48.81L49.44,52.22L52.63,45.4L54.0,47.68L55.37,45.4L58.56,52.22L62.2,48.81L69.03,54.5L78.15,47.68L87.26,59.06L79.51,63.62L71.31,61.34L64.02,67.04L54.0,73.87L43.98,67.04L36.69,61.34L28.49,63.62Z" />
+    <path
+        android:fillColor="#0B1220"
+        android:pathData="M23.2,59.06L31.64,48.52L40.08,54.84L46.41,49.57L49.78,52.73L52.73,46.41L54.0,48.52L55.27,46.41L58.22,52.73L61.59,49.57L67.92,54.84L76.36,48.52L84.8,59.06L77.62,63.28L70.03,61.17L63.28,66.45L54.0,72.77L44.72,66.45L37.97,61.17L30.38,63.28Z" />
 </vector>
