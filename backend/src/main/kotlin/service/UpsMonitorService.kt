@@ -16,6 +16,12 @@ class UpsMonitorService(
     private val logger = LoggerFactory.getLogger(UpsMonitorService::class.java)
     private var monitorJob: Job? = null
     private var lastStatus: String? = null
+    private var consecutiveFailures: Int = 0
+    private var failureNotificationSent: Boolean = false
+
+    companion object {
+        private const val MAX_CONSECUTIVE_FAILURES = 10
+    }
 
     fun start(scope: CoroutineScope) {
         if (monitorJob?.isActive == true) {
@@ -45,13 +51,68 @@ class UpsMonitorService(
     }
 
     private suspend fun pollAndStore() = withContext(Dispatchers.IO) {
-        val output = executeApcAccess()
-        val status = ApcAccessParser.parse(output)
-        repository.insert(status)
-        logger.debug("Stored UPS status: ${status.status}")
+        try {
+            val output = executeApcAccess()
+            val status = ApcAccessParser.parse(output)
 
-        // Check for status changes and send notifications
-        checkStatusAndNotify(status)
+            // Validate that the status has meaningful data
+            if (isBlankStatus(status)) {
+                logger.warn("Received blank/empty status data from apcaccess, not storing")
+                handleFailure()
+                return@withContext
+            }
+
+            // Valid data received - store it and reset failure counter
+            repository.insert(status)
+            logger.debug("Stored UPS status: ${status.status}")
+
+            // Reset failure tracking on successful data retrieval
+            if (consecutiveFailures > 0) {
+                logger.info("Successfully received data after $consecutiveFailures failures")
+
+                // Send recovery notification if we previously sent a failure notification
+                if (failureNotificationSent) {
+                    sendConnectionRestoredNotification(consecutiveFailures)
+                }
+
+                consecutiveFailures = 0
+                failureNotificationSent = false
+            }
+
+            // Check for status changes and send notifications
+            checkStatusAndNotify(status)
+
+        } catch (e: Exception) {
+            logger.error("Failed to poll UPS status", e)
+            handleFailure()
+        }
+    }
+
+    private suspend fun handleFailure() {
+        consecutiveFailures++
+        logger.warn("Consecutive failures: $consecutiveFailures/$MAX_CONSECUTIVE_FAILURES")
+
+        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES && !failureNotificationSent) {
+            logger.error("Reached $MAX_CONSECUTIVE_FAILURES consecutive failures - sending notification")
+            sendFailureNotification()
+            failureNotificationSent = true
+        }
+    }
+
+    private suspend fun sendFailureNotification() {
+        fcmService?.sendConnectionLostAlert(consecutiveFailures)
+    }
+
+    private suspend fun sendConnectionRestoredNotification(previousFailures: Int) {
+        fcmService?.sendConnectionRestoredAlert(previousFailures)
+    }
+
+    private fun isBlankStatus(status: UpsStatus): Boolean {
+        // Consider status blank if critical fields are empty or missing
+        return status.status.isBlank() ||
+               status.apc.isBlank() ||
+               status.hostname.isBlank() ||
+               status.model.isBlank()
     }
 
     private suspend fun checkStatusAndNotify(status: UpsStatus) {

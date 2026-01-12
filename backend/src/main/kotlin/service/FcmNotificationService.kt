@@ -63,6 +63,26 @@ class FcmNotificationService(
         sendNotificationToAllTokens(notification, status)
     }
 
+    suspend fun sendConnectionLostAlert(consecutiveFailures: Int) {
+        if (!enabled || !initialized) {
+            logger.debug("FCM notifications disabled or not initialized, skipping connection lost notification")
+            return
+        }
+
+        val notification = buildConnectionLostNotification(consecutiveFailures)
+        sendConnectionLostNotificationToAllTokens(notification, consecutiveFailures)
+    }
+
+    suspend fun sendConnectionRestoredAlert(previousFailures: Int) {
+        if (!enabled || !initialized) {
+            logger.debug("FCM notifications disabled or not initialized, skipping connection restored notification")
+            return
+        }
+
+        val notification = buildConnectionRestoredNotification(previousFailures)
+        sendConnectionRestoredNotificationToAllTokens(notification, previousFailures)
+    }
+
     suspend fun sendTestNotification(token: String): Boolean {
         if (!enabled || !initialized) {
             logger.warn("FCM notifications disabled or not initialized")
@@ -135,6 +155,20 @@ class FcmNotificationService(
             .build()
     }
 
+    private fun buildConnectionLostNotification(consecutiveFailures: Int): Notification {
+        return Notification.builder()
+            .setTitle("⚠️ UPS Connection Lost")
+            .setBody("Failed to retrieve UPS status $consecutiveFailures times. Check apcupsd connection.")
+            .build()
+    }
+
+    private fun buildConnectionRestoredNotification(previousFailures: Int): Notification {
+        return Notification.builder()
+            .setTitle("✅ UPS Connection Restored")
+            .setBody("Successfully reconnected to apcupsd after $previousFailures failed attempts.")
+            .build()
+    }
+
     private fun buildMessage(notification: Notification, status: UpsStatus, fcmToken: String): Message {
         val dataMap = mutableMapOf(
             "status" to status.status,
@@ -195,5 +229,117 @@ class FcmNotificationService(
                 logger.error("Unexpected error sending notification to ${deviceToken.deviceName}", e)
             }
         }
+    }
+
+    private suspend fun sendConnectionLostNotificationToAllTokens(notification: Notification, consecutiveFailures: Int) {
+        val tokens = deviceTokenRepository.findAll()
+        if (tokens.isEmpty()) {
+            logger.debug("No device tokens registered, skipping connection lost notification")
+            return
+        }
+
+        tokens.forEach { deviceToken ->
+            try {
+                val message = buildConnectionLostMessage(notification, consecutiveFailures, deviceToken.fcmToken)
+                val response = FirebaseMessaging.getInstance().send(message)
+                logger.info("Successfully sent connection lost notification to ${deviceToken.deviceName ?: "unknown device"}: $response")
+            } catch (e: FirebaseMessagingException) {
+                when (e.messagingErrorCode) {
+                    MessagingErrorCode.INVALID_ARGUMENT,
+                    MessagingErrorCode.UNREGISTERED -> {
+                        logger.warn("Invalid or unregistered token for ${deviceToken.deviceName}, removing: ${e.message}")
+                        deviceTokenRepository.delete(deviceToken.fcmToken)
+                    }
+                    else -> {
+                        logger.error("Failed to send connection lost notification to ${deviceToken.deviceName}: ${e.message}", e)
+                    }
+                }
+            } catch (e: Exception) {
+                logger.error("Unexpected error sending connection lost notification to ${deviceToken.deviceName}", e)
+            }
+        }
+    }
+
+    private suspend fun sendConnectionRestoredNotificationToAllTokens(notification: Notification, previousFailures: Int) {
+        val tokens = deviceTokenRepository.findAll()
+        if (tokens.isEmpty()) {
+            logger.debug("No device tokens registered, skipping connection restored notification")
+            return
+        }
+
+        tokens.forEach { deviceToken ->
+            try {
+                val message = buildConnectionRestoredMessage(notification, previousFailures, deviceToken.fcmToken)
+                val response = FirebaseMessaging.getInstance().send(message)
+                logger.info("Successfully sent connection restored notification to ${deviceToken.deviceName ?: "unknown device"}: $response")
+            } catch (e: FirebaseMessagingException) {
+                when (e.messagingErrorCode) {
+                    MessagingErrorCode.INVALID_ARGUMENT,
+                    MessagingErrorCode.UNREGISTERED -> {
+                        logger.warn("Invalid or unregistered token for ${deviceToken.deviceName}, removing: ${e.message}")
+                        deviceTokenRepository.delete(deviceToken.fcmToken)
+                    }
+                    else -> {
+                        logger.error("Failed to send connection restored notification to ${deviceToken.deviceName}: ${e.message}", e)
+                    }
+                }
+            } catch (e: Exception) {
+                logger.error("Unexpected error sending connection restored notification to ${deviceToken.deviceName}", e)
+            }
+        }
+    }
+
+    private fun buildConnectionLostMessage(notification: Notification, consecutiveFailures: Int, fcmToken: String): Message {
+        val dataMap = mapOf(
+            "type" to "connection_lost",
+            "consecutiveFailures" to consecutiveFailures.toString()
+        )
+
+        return Message.builder()
+            .setToken(fcmToken)
+            .setNotification(notification)
+            .putAllData(dataMap)
+            .setApnsConfig(
+                ApnsConfig.builder()
+                    .setAps(
+                        Aps.builder()
+                            .setSound("default")
+                            .setBadge(1)
+                            .setContentAvailable(true)
+                            .putCustomData("interruption-level", "time-sensitive")
+                            .build()
+                    )
+                    .putHeader("apns-priority", "10")
+                    .putHeader("apns-push-type", "alert")
+                    .build()
+            )
+            .build()
+    }
+
+    private fun buildConnectionRestoredMessage(notification: Notification, previousFailures: Int, fcmToken: String): Message {
+        val dataMap = mapOf(
+            "type" to "connection_restored",
+            "previousFailures" to previousFailures.toString()
+        )
+
+        return Message.builder()
+            .setToken(fcmToken)
+            .setNotification(notification)
+            .putAllData(dataMap)
+            .setApnsConfig(
+                ApnsConfig.builder()
+                    .setAps(
+                        Aps.builder()
+                            .setSound("default")
+                            .setBadge(0)
+                            .setContentAvailable(true)
+                            .putCustomData("interruption-level", "time-sensitive")
+                            .build()
+                    )
+                    .putHeader("apns-priority", "10")
+                    .putHeader("apns-push-type", "alert")
+                    .build()
+            )
+            .build()
     }
 }
