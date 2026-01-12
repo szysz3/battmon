@@ -94,8 +94,8 @@ class FcmNotificationService(
                 .setToken(token)
                 .setNotification(
                     Notification.builder()
-                        .setTitle("BattMon Test")
-                        .setBody("This is a test notification from BattMon")
+                        .setTitle("BattMon")
+                        .setBody("Test Notification • Push notifications are working correctly")
                         .build()
                 )
                 .setApnsConfig(
@@ -120,11 +120,11 @@ class FcmNotificationService(
     }
 
     private fun buildNotification(status: UpsStatus): Notification {
-        val title = when {
-            status.status.contains("ONBATT", ignoreCase = true) -> "⚠️ UPS On Battery"
-            status.status.contains("LOWBATT", ignoreCase = true) -> "🔋 UPS Low Battery"
-            status.status.contains("COMMLOST", ignoreCase = true) -> "❌ UPS Communication Lost"
-            else -> "⚠️ UPS Status Alert"
+        val subtitle = when {
+            status.status.contains("ONBATT", ignoreCase = true) -> "UPS On Battery"
+            status.status.contains("LOWBATT", ignoreCase = true) -> "Low Battery Warning"
+            status.status.contains("COMMLOST", ignoreCase = true) -> "Communication Lost"
+            else -> "Status Alert"
         }
 
         val bodyParts = mutableListOf<String>()
@@ -135,13 +135,14 @@ class FcmNotificationService(
         status.linev?.let { bodyParts.add("Line: ${it.toInt()}V") }
 
         return Notification.builder()
-            .setTitle(title)
-            .setBody(bodyParts.joinToString(" • "))
+            .setTitle("BattMon")
+            .setBody("$subtitle • ${bodyParts.joinToString(" • ")}")
             .build()
     }
 
     private fun buildRecoveryNotification(status: UpsStatus, previousStatus: String?): Notification {
         val bodyParts = mutableListOf<String>()
+        bodyParts.add("Power Restored")
         bodyParts.add("Status: ${status.status}")
         previousStatus?.let { bodyParts.add("Previous: $it") }
 
@@ -150,22 +151,22 @@ class FcmNotificationService(
         status.linev?.let { bodyParts.add("Line: ${it.toInt()}V") }
 
         return Notification.builder()
-            .setTitle("✅ Power Restored")
+            .setTitle("BattMon")
             .setBody(bodyParts.joinToString(" • "))
             .build()
     }
 
     private fun buildConnectionLostNotification(consecutiveFailures: Int): Notification {
         return Notification.builder()
-            .setTitle("⚠️ UPS Connection Lost")
-            .setBody("Failed to retrieve UPS status $consecutiveFailures times. Check apcupsd connection.")
+            .setTitle("BattMon")
+            .setBody("Connection Lost • Failed to retrieve UPS status $consecutiveFailures times. Check apcupsd connection.")
             .build()
     }
 
     private fun buildConnectionRestoredNotification(previousFailures: Int): Notification {
         return Notification.builder()
-            .setTitle("✅ UPS Connection Restored")
-            .setBody("Successfully reconnected to apcupsd after $previousFailures failed attempts.")
+            .setTitle("BattMon")
+            .setBody("Connection Restored • Successfully reconnected to apcupsd after $previousFailures failed attempts.")
             .build()
     }
 
