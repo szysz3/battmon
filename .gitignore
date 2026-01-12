@@ -16,6 +16,8 @@ Thumbs.db
 # Local config
 local.properties
 .claude/
+AGENTS.md
+CLAUDE.md
 
 # IDE
 .idea/
