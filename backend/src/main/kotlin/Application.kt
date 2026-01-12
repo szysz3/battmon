@@ -1,6 +1,7 @@
 package com.battmon
 
 import com.battmon.config.DatabaseConfig
+import com.battmon.config.EmailConfig
 import com.battmon.config.FirebaseConfig
 import com.battmon.config.UpsMonitorConfig
 import com.battmon.database.DatabaseFactory
@@ -8,6 +9,7 @@ import com.battmon.database.DeviceTokenRepository
 import com.battmon.database.UpsStatusRepository
 import com.battmon.plugins.configureSerialization
 import com.battmon.routes.configureNotificationRoutes
+import com.battmon.service.EmailNotificationService
 import com.battmon.service.FcmNotificationService
 import com.battmon.service.RetentionService
 import com.battmon.service.UpsMonitorService
@@ -42,6 +44,17 @@ fun Application.module() {
         enabled = environment.config.property("firebase.enabled").getString().toBoolean()
     )
 
+    val emailConfig = EmailConfig(
+        enabled = environment.config.property("email.enabled").getString().toBoolean(),
+        smtpHost = environment.config.property("email.smtp.host").getString(),
+        smtpPort = environment.config.property("email.smtp.port").getString().toInt(),
+        smtpUsername = environment.config.property("email.smtp.username").getString(),
+        smtpPassword = environment.config.property("email.smtp.password").getString(),
+        smtpStartTls = environment.config.property("email.smtp.startTls").getString().toBoolean(),
+        from = environment.config.property("email.from").getString(),
+        to = environment.config.property("email.to").getString()
+    )
+
     // Initialize database
     DatabaseFactory.init(
         jdbcUrl = dbConfig.jdbcUrl,
@@ -63,6 +76,11 @@ fun Application.module() {
     )
     fcmService.initialize()
 
+    // Initialize Email
+    val emailService = EmailNotificationService(
+        config = emailConfig
+    )
+
     // Configure plugins
     configureSerialization()
     configureRouting(repository)
@@ -74,7 +92,8 @@ fun Application.module() {
         repository = repository,
         pollIntervalSeconds = upsConfig.pollIntervalSeconds,
         apcAccessCommand = upsConfig.command,
-        fcmService = fcmService
+        fcmService = fcmService,
+        emailService = emailService
     )
     val retentionService = RetentionService(
         repository = repository,

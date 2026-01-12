@@ -22,3 +22,14 @@ ups:
 firebase:
   serviceAccountPath: "${FIREBASE_SERVICE_ACCOUNT_PATH:backend/firebase-credentials.json}"
   enabled: ${FIREBASE_ENABLED:true}
+
+email:
+  enabled: ${EMAIL_ENABLED:false}
+  smtp:
+    host: "${SMTP_HOST:smtp.gmail.com}"
+    port: ${SMTP_PORT:587}
+    username: "${SMTP_USERNAME:}"
+    password: "${SMTP_PASSWORD:}"
+    startTls: ${SMTP_START_TLS:true}
+  from: "${EMAIL_FROM:}"
+  to: "${EMAIL_TO:}"

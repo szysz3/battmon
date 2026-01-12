@@ -11,11 +11,13 @@ class UpsMonitorService(
     private val repository: UpsStatusRepository,
     private val pollIntervalSeconds: Long = 5,
     private val apcAccessCommand: String = "apcaccess status",
-    private val fcmService: FcmNotificationService? = null
+    private val fcmService: FcmNotificationService? = null,
+    private val emailService: EmailNotificationService? = null
 ) {
     private val logger = LoggerFactory.getLogger(UpsMonitorService::class.java)
     private var monitorJob: Job? = null
     private var lastStatus: String? = null
+    private var lastApcAccessOutput: String? = null
     private var consecutiveFailures: Int = 0
     private var failureNotificationSent: Boolean = false
 
@@ -66,13 +68,16 @@ class UpsMonitorService(
             repository.insert(status)
             logger.debug("Stored UPS status: ${status.status}")
 
+            // Store the output for email notifications
+            lastApcAccessOutput = output
+
             // Reset failure tracking on successful data retrieval
             if (consecutiveFailures > 0) {
                 logger.info("Successfully received data after $consecutiveFailures failures")
 
                 // Send recovery notification if we previously sent a failure notification
                 if (failureNotificationSent) {
-                    sendConnectionRestoredNotification(consecutiveFailures)
+                    sendConnectionRestoredNotification(consecutiveFailures, output)
                 }
 
                 consecutiveFailures = 0
@@ -80,7 +85,7 @@ class UpsMonitorService(
             }
 
             // Check for status changes and send notifications
-            checkStatusAndNotify(status)
+            checkStatusAndNotify(status, output)
 
         } catch (e: Exception) {
             logger.error("Failed to poll UPS status", e)
@@ -101,10 +106,12 @@ class UpsMonitorService(
 
     private suspend fun sendFailureNotification() {
         fcmService?.sendConnectionLostAlert(consecutiveFailures)
+        emailService?.sendConnectionLostEmail(consecutiveFailures, lastApcAccessOutput)
     }
 
-    private suspend fun sendConnectionRestoredNotification(previousFailures: Int) {
+    private suspend fun sendConnectionRestoredNotification(previousFailures: Int, currentOutput: String) {
         fcmService?.sendConnectionRestoredAlert(previousFailures)
+        emailService?.sendConnectionRestoredEmail(previousFailures, currentOutput)
     }
 
     private fun isBlankStatus(status: UpsStatus): Boolean {
@@ -115,7 +122,7 @@ class UpsMonitorService(
                status.model.isBlank()
     }
 
-    private suspend fun checkStatusAndNotify(status: UpsStatus) {
+    private suspend fun checkStatusAndNotify(status: UpsStatus, apcAccessOutput: String) {
         val currentStatus = status.status.uppercase()
         val previousStatus = lastStatus
 
@@ -126,11 +133,13 @@ class UpsMonitorService(
         if (isCurrentlyOffline && wasOnlineOrUnknown) {
             logger.warn("UPS status changed from ${previousStatus ?: "unknown"} to $currentStatus - sending notification")
             fcmService?.sendStatusAlert(status)
+            emailService?.sendStatusAlertEmail(status, apcAccessOutput)
         } else if (isCurrentlyOffline && !wasOnlineOrUnknown) {
             logger.debug("UPS still offline: $currentStatus (was: $previousStatus)")
         } else if (!isCurrentlyOffline && previousStatus != null && !previousStatus.contains("ONLINE")) {
             logger.info("UPS status recovered from $previousStatus to $currentStatus")
             fcmService?.sendRecoveryAlert(status, previousStatus)
+            emailService?.sendRecoveryEmail(status, previousStatus, apcAccessOutput)
         }
 
         lastStatus = currentStatus

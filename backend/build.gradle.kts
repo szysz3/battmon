@@ -52,6 +52,9 @@ dependencies {
     // Firebase Admin SDK
     implementation("com.google.firebase:firebase-admin:9.4.2")
 
+    // Email
+    implementation("com.sun.mail:jakarta.mail:2.0.1")
+
     // Logging
     implementation("ch.qos.logback:logback-classic:$logback_version")
 

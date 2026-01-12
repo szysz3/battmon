@@ -35,3 +35,15 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Environment files with secrets
+.env
+.env.local
+.env.production
+
+# Docker secrets
+secrets/
+
+# Email credentials
+*credentials*
+!firebase-credentials.json.example

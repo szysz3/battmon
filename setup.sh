@@ -163,6 +163,112 @@ fi
 
 echo ""
 
+# Step 4.5: Email notification setup
+echo -e "${BLUE}Step 4.5: Setting up email notifications...${NC}"
+echo ""
+
+# Function to update .env value
+update_env_value() {
+    local key=$1
+    local value=$2
+    local env_file=".env"
+
+    if grep -q "^${key}=" "$env_file"; then
+        # Update existing value (compatible with BSD sed on macOS)
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' "s|^${key}=.*|${key}=${value}|" "$env_file"
+        else
+            sed -i "s|^${key}=.*|${key}=${value}|" "$env_file"
+        fi
+    else
+        # Append if not exists
+        echo "${key}=${value}" >> "$env_file"
+    fi
+}
+
+print_info "BattMon can send email notifications with full UPS diagnostics when:"
+echo "  • UPS status changes (battery, power loss, etc.)"
+echo "  • UPS power is restored"
+echo "  • Connection to apcupsd is lost/restored"
+echo ""
+
+read -p "Do you want to enable email notifications? (y/N): " -n 1 -r
+echo
+echo ""
+
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    print_info "Setting up Gmail email notifications..."
+    echo ""
+
+    print_warning "For Gmail with 2FA (recommended):"
+    echo "  1. Enable 2FA on your Gmail account"
+    echo "  2. Create an App Password at: https://myaccount.google.com/apppasswords"
+    echo "  3. Use the 16-character App Password (not your regular Gmail password)"
+    echo ""
+    print_info "See EMAIL_SETUP.md for detailed instructions"
+    echo ""
+
+    # Sender email
+    read -p "Enter sender email address (e.g., notifications@gmail.com): " SENDER_EMAIL
+    if [ -z "$SENDER_EMAIL" ]; then
+        print_error "Sender email is required"
+        exit 1
+    fi
+
+    # SMTP username (usually same as sender)
+    read -p "Enter SMTP username [${SENDER_EMAIL}]: " SMTP_USER
+    SMTP_USER=${SMTP_USER:-$SENDER_EMAIL}
+
+    # SMTP password
+    echo ""
+    print_warning "IMPORTANT: Use Gmail App Password, NOT your regular password!"
+    read -sp "Enter SMTP password (App Password): " SMTP_PASS
+    echo ""
+
+    if [ -z "$SMTP_PASS" ]; then
+        print_error "SMTP password is required"
+        exit 1
+    fi
+
+    # Recipient email
+    echo ""
+    read -p "Enter recipient email address (who receives alerts): " RECIPIENT_EMAIL
+    if [ -z "$RECIPIENT_EMAIL" ]; then
+        print_error "Recipient email is required"
+        exit 1
+    fi
+
+    # SMTP server (default Gmail)
+    echo ""
+    read -p "Enter SMTP host [smtp.gmail.com]: " SMTP_HOST
+    SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+
+    read -p "Enter SMTP port [587]: " SMTP_PORT
+    SMTP_PORT=${SMTP_PORT:-587}
+
+    # Update .env file
+    update_env_value "EMAIL_ENABLED" "true"
+    update_env_value "SMTP_HOST" "$SMTP_HOST"
+    update_env_value "SMTP_PORT" "$SMTP_PORT"
+    update_env_value "SMTP_USERNAME" "$SMTP_USER"
+    update_env_value "SMTP_PASSWORD" "$SMTP_PASS"
+    update_env_value "EMAIL_FROM" "$SENDER_EMAIL"
+    update_env_value "EMAIL_TO" "$RECIPIENT_EMAIL"
+
+    echo ""
+    print_success "Email notifications configured"
+    print_info "From: $SENDER_EMAIL"
+    print_info "To: $RECIPIENT_EMAIL"
+    print_warning "Your credentials are stored in .env (gitignored)"
+
+else
+    update_env_value "EMAIL_ENABLED" "false"
+    print_info "Email notifications disabled"
+    print_info "You can enable them later by editing .env file"
+fi
+
+echo ""
+
 # Step 5: Setup apcaccess-proxy
 echo -e "${BLUE}Step 5: Setting up apcaccess HTTP proxy...${NC}"
 echo ""
@@ -359,5 +465,15 @@ echo "  • Root:                curl http://localhost:8080/"
 echo "  • Latest reading:      curl http://localhost:8080/status/latest"
 echo "  • Historical data:     curl 'http://localhost:8080/status/history?from=2026-01-12T10:00:00Z&to=2026-01-12T11:00:00Z'"
 echo ""
+
+# Show email notification status
+if grep -q "^EMAIL_ENABLED=true" .env 2>/dev/null; then
+    echo -e "${GREEN}Email Notifications: ENABLED${NC}"
+    RECIPIENT=$(grep "^EMAIL_TO=" .env | cut -d= -f2)
+    echo "  • Recipient: $RECIPIENT"
+    echo "  • For setup help: see EMAIL_SETUP.md"
+    echo ""
+fi
+
 echo "For more information, see README.md"
 echo ""

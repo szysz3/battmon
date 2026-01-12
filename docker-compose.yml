@@ -43,6 +43,16 @@ services:
       FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-/app/firebase-credentials.json}
       FIREBASE_ENABLED: ${FIREBASE_ENABLED:-true}
 
+      # Email notification configuration
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_START_TLS: ${SMTP_START_TLS:-true}
+      EMAIL_FROM: ${EMAIL_FROM}
+      EMAIL_TO: ${EMAIL_TO}
+
       # JVM options
       JAVA_OPTS: ${JAVA_OPTS:--Xmx512m -Xms256m}
     volumes:
