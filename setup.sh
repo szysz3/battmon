@@ -186,17 +186,43 @@ update_env_value() {
     fi
 }
 
-print_info "BattMon can send email notifications with full UPS diagnostics when:"
-echo "  • UPS status changes (battery, power loss, etc.)"
-echo "  • UPS power is restored"
-echo "  • Connection to apcupsd is lost/restored"
-echo ""
+# Check if email is already configured
+EMAIL_ALREADY_CONFIGURED=false
+if [ -f ".env" ] && grep -q "^EMAIL_ENABLED=true" .env 2>/dev/null; then
+    EMAIL_ALREADY_CONFIGURED=true
+    EXISTING_EMAIL_FROM=$(grep "^EMAIL_FROM=" .env 2>/dev/null | cut -d= -f2)
+    EXISTING_EMAIL_TO=$(grep "^EMAIL_TO=" .env 2>/dev/null | cut -d= -f2)
 
-read -p "Do you want to enable email notifications? (y/N): " -n 1 -r
-echo
-echo ""
+    print_success "Email notifications are already configured"
+    print_info "From: $EXISTING_EMAIL_FROM"
+    print_info "To: $EXISTING_EMAIL_TO"
+    echo ""
+    read -p "Do you want to reconfigure email settings? (y/N): " -n 1 -r
+    echo
+    echo ""
 
-if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        print_info "Keeping existing email configuration"
+        echo ""
+        # Skip to next step
+        EMAIL_ALREADY_CONFIGURED=true
+    else
+        EMAIL_ALREADY_CONFIGURED=false
+    fi
+fi
+
+if [ "$EMAIL_ALREADY_CONFIGURED" = false ]; then
+    print_info "BattMon can send email notifications with full UPS diagnostics when:"
+    echo "  • UPS status changes (battery, power loss, etc.)"
+    echo "  • UPS power is restored"
+    echo "  • Connection to apcupsd is lost/restored"
+    echo ""
+
+    read -p "Do you want to enable email notifications? (y/N): " -n 1 -r
+    echo
+    echo ""
+
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
     print_info "Setting up Gmail email notifications..."
     echo ""
 
@@ -261,10 +287,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     print_info "To: $RECIPIENT_EMAIL"
     print_warning "Your credentials are stored in .env (gitignored)"
 
-else
-    update_env_value "EMAIL_ENABLED" "false"
-    print_info "Email notifications disabled"
-    print_info "You can enable them later by editing .env file"
+    else
+        update_env_value "EMAIL_ENABLED" "false"
+        print_info "Email notifications disabled"
+        print_info "You can enable them later by editing .env file"
+    fi
 fi
 
 echo ""
