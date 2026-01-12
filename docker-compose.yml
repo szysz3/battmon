@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: battmon-postgres
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-battmon}
+      POSTGRES_USER: ${DATABASE_USER:-battmon}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-battmon}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-battmon}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: battmon-backend
+    network_mode: host
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database configuration
+      DATABASE_URL: jdbc:postgresql://localhost:5432/${DATABASE_NAME:-battmon}
+      DATABASE_USER: ${DATABASE_USER:-battmon}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-battmon}
+
+      # UPS monitor configuration
+      # This should call the apcaccess-proxy service running on the host
+      UPS_COMMAND: curl -s http://localhost:8081/apcaccess
+      UPS_POLL_INTERVAL: ${UPS_POLL_INTERVAL:-5}
+
+      # Firebase configuration
+      FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-/app/firebase-credentials.json}
+      FIREBASE_ENABLED: ${FIREBASE_ENABLED:-true}
+
+      # JVM options
+      JAVA_OPTS: ${JAVA_OPTS:--Xmx512m -Xms256m}
+    volumes:
+      # Mount Firebase credentials (required)
+      - ${HOST_FIREBASE_CREDENTIALS_PATH:-./backend/firebase-credentials.json}:/app/firebase-credentials.json:ro
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local

@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Build outputs
+**/build/
+**/out/
+**/.gradle/
+**/.kotlin/
+
+# IDE
+.idea/
+**/*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# Mobile (not needed - Docker uses settings.docker.gradle.kts which excludes mobile)
+mobile/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Documentation
+*.md
+AGENTS.md
+CLAUDE.md
+
+# Local config
+local.properties
+.env
+.env.*
+!.env.example
+
+# Firebase credentials (will be mounted as volume)
+**/firebase-credentials.json
+
+# Temporary files
+*.log
+*.tmp

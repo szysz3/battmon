@@ -1,0 +1,17 @@
+[Unit]
+Description=APC Access HTTP Proxy
+After=network.target apcupsd.service
+Wants=apcupsd.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/battmon
+ExecStart=/usr/bin/python3 /opt/battmon/scripts/apcaccess-proxy.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
