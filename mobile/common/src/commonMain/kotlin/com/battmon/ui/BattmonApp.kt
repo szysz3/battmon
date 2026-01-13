@@ -97,29 +97,50 @@ private fun BottomNavigationBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(bottomBarGradient)
     ) {
-        // Top shadow overlay
+        // Drop shadow that extends upward over the content
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(6.dp)
+                .height(16.dp)
+                .offset(y = (-16).dp)
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color.Black.copy(alpha = 0.18f),
-                            Color.Transparent
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.04f),
+                            Color.Black.copy(alpha = 0.10f)
                         )
                     )
                 )
         )
 
-        NavigationBar(
-            containerColor = Color.Transparent,
-            tonalElevation = 0.dp
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(bottomBarGradient)
         ) {
-            Screen.items.forEach { screen ->
-                NavigationBarItem(
+            // Top shadow overlay - inside the bar
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.18f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+
+            NavigationBar(
+                containerColor = Color.Transparent,
+                tonalElevation = 0.dp
+            ) {
+                Screen.items.forEach { screen ->
+                    NavigationBarItem(
                     icon = {
                         Icon(
                             imageVector = screen.icon,
@@ -137,6 +158,7 @@ private fun BottomNavigationBar(
                         indicatorColor = accentColor.copy(alpha = 0.14f)
                     )
                 )
+                }
             }
         }
     }

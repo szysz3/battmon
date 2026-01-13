@@ -53,7 +53,7 @@ fun BattmonTheme(
             onBackground = Color(0xFF0F172A),
             surface = Color.White,
             onSurface = Color(0xFF0F172A),
-            surfaceVariant = Color(0xFFE9EEF5),
+            surfaceVariant = Color(0xFFD4DAE5),
             onSurfaceVariant = Color(0xFF475569),
             error = StatusOnBattery,
             onError = Color.White,

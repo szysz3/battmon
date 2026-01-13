@@ -16,7 +16,7 @@ val AccentPurple = Color(0xFF8B5CF6)        // Purple
 val AccentPink = Color(0xFFEC4899)          // Pink
 
 // Background Colors
-val SurfaceLight = Color(0xFFF5F7FB)        // Soft white
+val SurfaceLight = Color(0xFFE8ECF2)        // Darker soft gray-blue
 val SurfaceDark = Color(0xFF0B1220)         // Deep dark blue
 @Suppress("unused")
 val GlassLight = Color(0xEFFFFFFF)          // Frosted white
