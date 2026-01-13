@@ -16,7 +16,7 @@ object AppConfig {
      * - Local: "http://192.168.50.99:8080"
      * - Production: "https://api.battmon.com"
      */
-    const val API_BASE_URL = "http://192.168.50.99:8080"
+    const val API_BASE_URL = "http://192.168.50.104:8080"
 
     /**
      * Network timeout in milliseconds

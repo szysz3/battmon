@@ -108,6 +108,18 @@ class FcmNotificationService(
                         )
                         .build()
                 )
+                .setAndroidConfig(
+                    AndroidConfig.builder()
+                        .setPriority(AndroidConfig.Priority.HIGH)
+                        .setNotification(
+                            AndroidNotification.builder()
+                                .setChannelId("battmon_alerts")
+                                .setPriority(AndroidNotification.Priority.HIGH)
+                                .setSound("default")
+                                .build()
+                        )
+                        .build()
+                )
                 .build()
 
             val response = FirebaseMessaging.getInstance().send(message)
@@ -198,6 +210,18 @@ class FcmNotificationService(
                     )
                     .putHeader("apns-priority", "10")
                     .putHeader("apns-push-type", "alert")
+                    .build()
+            )
+            .setAndroidConfig(
+                AndroidConfig.builder()
+                    .setPriority(AndroidConfig.Priority.HIGH)
+                    .setNotification(
+                        AndroidNotification.builder()
+                            .setChannelId("battmon_alerts")
+                            .setPriority(AndroidNotification.Priority.HIGH)
+                            .setSound("default")
+                            .build()
+                    )
                     .build()
             )
             .build()
@@ -314,6 +338,18 @@ class FcmNotificationService(
                     .putHeader("apns-push-type", "alert")
                     .build()
             )
+            .setAndroidConfig(
+                AndroidConfig.builder()
+                    .setPriority(AndroidConfig.Priority.HIGH)
+                    .setNotification(
+                        AndroidNotification.builder()
+                            .setChannelId("battmon_alerts")
+                            .setPriority(AndroidNotification.Priority.HIGH)
+                            .setSound("default")
+                            .build()
+                    )
+                    .build()
+            )
             .build()
     }
 
@@ -339,6 +375,18 @@ class FcmNotificationService(
                     )
                     .putHeader("apns-priority", "10")
                     .putHeader("apns-push-type", "alert")
+                    .build()
+            )
+            .setAndroidConfig(
+                AndroidConfig.builder()
+                    .setPriority(AndroidConfig.Priority.HIGH)
+                    .setNotification(
+                        AndroidNotification.builder()
+                            .setChannelId("battmon_alerts")
+                            .setPriority(AndroidNotification.Priority.HIGH)
+                            .setSound("default")
+                            .build()
+                    )
                     .build()
             )
             .build()

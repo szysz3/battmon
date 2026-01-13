@@ -11,3 +11,4 @@ local.properties
 xcuserdata
 DerivedData
 *.xcworkspace
+/android/google-services.json
