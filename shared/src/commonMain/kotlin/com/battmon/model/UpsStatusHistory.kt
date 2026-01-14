@@ -7,5 +7,8 @@ data class UpsStatusHistory(
     val data: List<UpsStatus>,
     val count: Int,
     val from: String?,
-    val to: String?
+    val to: String?,
+    val totalCount: Long? = null,
+    val limit: Int? = null,
+    val offset: Long? = null
 )

@@ -153,23 +153,34 @@ class UpsMonitorService(
             .redirectErrorStream(true)
             .start()
 
-        val output = BufferedReader(InputStreamReader(process.inputStream))
-            .use { it.readText() }
-
-        val completed = process.waitFor(APCACCESS_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        if (!completed) {
-            process.destroy()
-            if (!process.waitFor(2, TimeUnit.SECONDS)) {
-                process.destroyForcibly()
+        try {
+            // Read output with proper resource management
+            val output = process.inputStream.bufferedReader().use { reader ->
+                reader.readText()
             }
-            throw IllegalStateException("apcaccess timed out after ${APCACCESS_TIMEOUT_SECONDS}s")
-        }
 
-        val exitCode = process.exitValue()
-        if (exitCode != 0) {
-            throw IllegalStateException("apcaccess failed (exit=$exitCode): ${output.trim()}")
+            // Wait for process to complete
+            val completed = process.waitFor(APCACCESS_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            if (!completed) {
+                throw IllegalStateException("apcaccess timed out after ${APCACCESS_TIMEOUT_SECONDS}s")
+            }
+
+            val exitCode = process.exitValue()
+            if (exitCode != 0) {
+                throw IllegalStateException("apcaccess failed (exit=$exitCode): ${output.trim()}")
+            }
+            return output
+        } finally {
+            // Ensure process is always cleaned up, even if exceptions occur
+            if (process.isAlive) {
+                process.destroy()
+                // Give it a moment to terminate gracefully
+                if (!process.waitFor(2, TimeUnit.SECONDS)) {
+                    // Force kill if it doesn't terminate
+                    process.destroyForcibly()
+                }
+            }
         }
-        return output
     }
 
     private fun parseCommand(command: String): List<String> {

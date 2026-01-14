@@ -27,6 +27,8 @@ fun Application.configureRouting(repository: UpsStatusRepository) {
             get("/history") {
                 val fromParam = call.request.queryParameters["from"]
                 val toParam = call.request.queryParameters["to"]
+                val limitParam = call.request.queryParameters["limit"]
+                val offsetParam = call.request.queryParameters["offset"]
 
                 if (fromParam == null || toParam == null) {
                     call.respond(
@@ -40,13 +42,69 @@ fun Application.configureRouting(repository: UpsStatusRepository) {
                     val from = Instant.parse(fromParam)
                     val to = Instant.parse(toParam)
 
-                    val data = repository.findByTimeRange(from, to)
+                    // Validate time range order
+                    if (to < from) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            mapOf("error" to "'to' timestamp must be after 'from' timestamp")
+                        )
+                        return@get
+                    }
+
+                    // Parse and validate pagination parameters
+                    // If parameter is provided but invalid, return error instead of using default
+                    val limit = if (limitParam != null) {
+                        limitParam.toIntOrNull() ?: run {
+                            call.respond(
+                                HttpStatusCode.BadRequest,
+                                mapOf("error" to "Invalid 'limit' parameter: must be a valid integer")
+                            )
+                            return@get
+                        }
+                    } else {
+                        1000  // Default when not provided
+                    }
+
+                    val offset = if (offsetParam != null) {
+                        offsetParam.toLongOrNull() ?: run {
+                            call.respond(
+                                HttpStatusCode.BadRequest,
+                                mapOf("error" to "Invalid 'offset' parameter: must be a valid integer")
+                            )
+                            return@get
+                        }
+                    } else {
+                        0L  // Default when not provided
+                    }
+
+                    if (limit < 1 || limit > 10000) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            mapOf("error" to "limit must be between 1 and 10000")
+                        )
+                        return@get
+                    }
+
+                    if (offset < 0) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            mapOf("error" to "offset must be non-negative")
+                        )
+                        return@get
+                    }
+
+                    val data = repository.findByTimeRange(from, to, limit, offset)
+                    val totalCount = repository.countByTimeRange(from, to)
+
                     call.respond(
                         UpsStatusHistory(
                             data = data,
                             count = data.size,
                             from = fromParam,
-                            to = toParam
+                            to = toParam,
+                            totalCount = totalCount,
+                            limit = limit,
+                            offset = offset
                         )
                     )
                 } catch (e: IllegalArgumentException) {

@@ -62,12 +62,40 @@ class UpsStatusRepository {
             .firstOrNull()
     }
 
-    fun findByTimeRange(from: Instant, to: Instant): List<UpsStatus> = transaction {
+    /**
+     * Finds UPS status records within a time range.
+     * @param from Start timestamp (inclusive)
+     * @param to End timestamp (inclusive)
+     * @param limit Maximum number of records to return (default: 1000, max: 10000)
+     * @param offset Number of records to skip (default: 0)
+     * @return List of UPS status records ordered by timestamp descending
+     */
+    fun findByTimeRange(
+        from: Instant,
+        to: Instant,
+        limit: Int = 1000,
+        offset: Long = 0
+    ): List<UpsStatus> = transaction {
         UpsStatusTable
             .selectAll()
             .where { UpsStatusTable.timestamp greaterEq from and (UpsStatusTable.timestamp lessEq to) }
             .orderBy(UpsStatusTable.timestamp, SortOrder.DESC)
+            .limit(limit)
+            .offset(offset)
             .map { it.toUpsStatus() }
+    }
+
+    /**
+     * Counts the number of UPS status records within a time range.
+     * @param from Start timestamp (inclusive)
+     * @param to End timestamp (inclusive)
+     * @return Total count of records in the time range
+     */
+    fun countByTimeRange(from: Instant, to: Instant): Long = transaction {
+        UpsStatusTable
+            .selectAll()
+            .where { UpsStatusTable.timestamp greaterEq from and (UpsStatusTable.timestamp lessEq to) }
+            .count()
     }
 
     fun deleteOlderThan(cutoff: Instant): Int = transaction {
