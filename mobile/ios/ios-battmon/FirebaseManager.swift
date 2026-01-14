@@ -7,8 +7,12 @@ class FirebaseManager: NSObject, ObservableObject {
     static let shared = FirebaseManager()
 
     @Published var fcmToken: String?
-    private var permissionCallback: ((Bool) -> Void)?
-    private var tokenCallback: ((String?) -> Void)?
+
+    /// Callback to be invoked when a valid FCM token is received (after APNS is set)
+    private var onTokenReceived: ((String) -> Void)?
+
+    /// Tracks whether we've already registered with the backend for this token
+    private var lastRegisteredToken: String?
 
     override private init() {
         super.init()
@@ -22,8 +26,10 @@ class FirebaseManager: NSObject, ObservableObject {
         print("Firebase configured successfully")
     }
 
-    func requestNotificationPermission(completion: @escaping (Bool) -> Void) {
-        self.permissionCallback = completion
+    /// Requests notification permission and registers for remote notifications.
+    /// The token callback will be invoked via MessagingDelegate once APNS is set and FCM token is ready.
+    func requestNotificationPermission(onToken: @escaping (String) -> Void) {
+        self.onTokenReceived = onToken
 
         let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
         UNUserNotificationCenter.current().requestAuthorization(
@@ -31,7 +37,6 @@ class FirebaseManager: NSObject, ObservableObject {
             completionHandler: { granted, error in
                 if let error = error {
                     print("Error requesting notification permission: \(error.localizedDescription)")
-                    completion(false)
                     return
                 }
 
@@ -39,27 +44,24 @@ class FirebaseManager: NSObject, ObservableObject {
 
                 if granted {
                     DispatchQueue.main.async {
+                        // This triggers APNS registration
+                        // The APNS token will be received in AppDelegate.didRegisterForRemoteNotificationsWithDeviceToken
+                        // Then Firebase will generate the FCM token and call MessagingDelegate.didReceiveRegistrationToken
                         UIApplication.shared.registerForRemoteNotifications()
                     }
                 }
-
-                completion(granted)
             }
         )
     }
 
-    func getFCMToken(completion: @escaping (String?) -> Void) {
-        self.tokenCallback = completion
+    /// Sets the callback for when FCM token is received.
+    /// If a token is already available, calls the callback immediately.
+    func setTokenCallback(_ callback: @escaping (String) -> Void) {
+        self.onTokenReceived = callback
 
-        Messaging.messaging().token { token, error in
-            if let error = error {
-                print("Error fetching FCM registration token: \(error)")
-                completion(nil)
-            } else if let token = token {
-                print("FCM registration token: \(token)")
-                self.fcmToken = token
-                completion(token)
-            }
+        // If we already have a token, invoke callback immediately
+        if let token = fcmToken {
+            callback(token)
         }
     }
 }
@@ -67,20 +69,25 @@ class FirebaseManager: NSObject, ObservableObject {
 // MARK: - MessagingDelegate
 extension FirebaseManager: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        print("Firebase registration token: \(String(describing: fcmToken))")
+        guard let token = fcmToken else {
+            print("Firebase: Received nil FCM token")
+            return
+        }
 
-        self.fcmToken = fcmToken
+        print("Firebase: FCM token received: \(token)")
+        self.fcmToken = token
 
-        let dataDict: [String: String] = ["token": fcmToken ?? ""]
+        // Post notification for any observers
         NotificationCenter.default.post(
             name: Notification.Name("FCMToken"),
             object: nil,
-            userInfo: dataDict
+            userInfo: ["token": token]
         )
 
-        // Call the stored callback if it exists
-        if let token = fcmToken {
-            tokenCallback?(token)
+        // Invoke the callback if set and token is new
+        if let callback = onTokenReceived, lastRegisteredToken != token {
+            lastRegisteredToken = token
+            callback(token)
         }
     }
 }

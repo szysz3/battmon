@@ -5,6 +5,8 @@ import com.battmon.model.UpsStatus
 import jakarta.mail.*
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import java.util.*
 
@@ -31,7 +33,7 @@ class EmailNotificationService(
         }
     }
 
-    fun sendStatusAlertEmail(status: UpsStatus, apcAccessOutput: String) {
+    suspend fun sendStatusAlertEmail(status: UpsStatus, apcAccessOutput: String) {
         if (!config.enabled) {
             logger.debug("Email notifications disabled, skipping status alert email")
             return
@@ -48,7 +50,7 @@ class EmailNotificationService(
         sendEmail(subject, body)
     }
 
-    fun sendConnectionLostEmail(consecutiveFailures: Int, lastOutput: String?) {
+    suspend fun sendConnectionLostEmail(consecutiveFailures: Int, lastOutput: String?) {
         if (!config.enabled) {
             logger.debug("Email notifications disabled, skipping connection lost email")
             return
@@ -65,7 +67,7 @@ class EmailNotificationService(
         sendEmail(subject, body)
     }
 
-    fun sendConnectionRestoredEmail(previousFailures: Int, currentOutput: String) {
+    suspend fun sendConnectionRestoredEmail(previousFailures: Int, currentOutput: String) {
         if (!config.enabled) {
             logger.debug("Email notifications disabled, skipping connection restored email")
             return
@@ -82,7 +84,7 @@ class EmailNotificationService(
         sendEmail(subject, body)
     }
 
-    fun sendRecoveryEmail(status: UpsStatus, previousStatus: String?, apcAccessOutput: String) {
+    suspend fun sendRecoveryEmail(status: UpsStatus, previousStatus: String?, apcAccessOutput: String) {
         if (!config.enabled) {
             logger.debug("Email notifications disabled, skipping recovery email")
             return
@@ -99,7 +101,7 @@ class EmailNotificationService(
         sendEmail(subject, body)
     }
 
-    private fun sendEmail(subject: String, body: String) {
+    private suspend fun sendEmail(subject: String, body: String) = withContext(Dispatchers.IO) {
         try {
             val message = MimeMessage(session).apply {
                 setFrom(InternetAddress(config.from))

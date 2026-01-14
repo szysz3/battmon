@@ -6,6 +6,7 @@ import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.messaging.*
+import kotlinx.coroutines.delay
 import org.slf4j.LoggerFactory
 import java.io.FileInputStream
 
@@ -16,6 +17,11 @@ class FcmNotificationService(
 ) {
     private val logger = LoggerFactory.getLogger(FcmNotificationService::class.java)
     private var initialized = false
+
+    companion object {
+        private const val MAX_RETRIES = 3
+        private const val INITIAL_RETRY_DELAY_MS = 1000L
+    }
 
     fun initialize() {
         if (!enabled) {
@@ -260,7 +266,8 @@ class FcmNotificationService(
 
     /**
      * Generic method to send notifications to all registered device tokens.
-     * Handles token validation, error cases, and automatic cleanup of invalid tokens.
+     * Handles token validation, error cases, automatic cleanup of invalid tokens,
+     * and retries for transient failures.
      *
      * @param notification The notification content to send
      * @param dataMap Custom data payload to include with the notification
@@ -280,24 +287,65 @@ class FcmNotificationService(
         }
 
         tokens.forEach { deviceToken ->
+            val deviceName = deviceToken.deviceName ?: "unknown device"
+            val message = buildMessage(notification, dataMap, deviceToken.fcmToken, badgeCount)
+
+            sendMessageWithRetry(message, deviceToken.fcmToken, deviceName, notificationType)
+        }
+    }
+
+    /**
+     * Sends a message with retry logic for transient failures.
+     * Uses exponential backoff: 1s, 2s, 4s delays between retries.
+     *
+     * @param message The FCM message to send
+     * @param fcmToken The device token (used for cleanup on permanent failure)
+     * @param deviceName The device name for logging
+     * @param notificationType Description for logging
+     */
+    private suspend fun sendMessageWithRetry(
+        message: Message,
+        fcmToken: String,
+        deviceName: String,
+        notificationType: String
+    ) {
+        var lastException: Exception? = null
+
+        repeat(MAX_RETRIES) { attempt ->
             try {
-                val message = buildMessage(notification, dataMap, deviceToken.fcmToken, badgeCount)
                 val response = FirebaseMessaging.getInstance().send(message)
-                logger.info("Successfully sent $notificationType notification to ${deviceToken.deviceName ?: "unknown device"}: $response")
+                logger.info("Successfully sent $notificationType notification to $deviceName: $response")
+                return // Success - exit early
             } catch (e: FirebaseMessagingException) {
                 when (e.messagingErrorCode) {
+                    // Permanent failures - don't retry, remove invalid tokens
                     MessagingErrorCode.INVALID_ARGUMENT,
                     MessagingErrorCode.UNREGISTERED -> {
-                        logger.warn("Invalid or unregistered token for ${deviceToken.deviceName}, removing: ${e.message}")
-                        deviceTokenRepository.delete(deviceToken.fcmToken)
+                        logger.warn("Invalid or unregistered token for $deviceName, removing: ${e.message}")
+                        deviceTokenRepository.delete(fcmToken)
+                        return // Don't retry for permanent failures
                     }
+                    // Transient failures - retry with backoff
                     else -> {
-                        logger.error("Failed to send $notificationType notification to ${deviceToken.deviceName}: ${e.message}", e)
+                        lastException = e
+                        if (attempt < MAX_RETRIES - 1) {
+                            val delayMs = INITIAL_RETRY_DELAY_MS * (1 shl attempt) // Exponential backoff
+                            logger.warn("Transient error sending $notificationType to $deviceName (attempt ${attempt + 1}/$MAX_RETRIES), retrying in ${delayMs}ms: ${e.message}")
+                            delay(delayMs)
+                        }
                     }
                 }
             } catch (e: Exception) {
-                logger.error("Unexpected error sending $notificationType notification to ${deviceToken.deviceName}", e)
+                lastException = e
+                if (attempt < MAX_RETRIES - 1) {
+                    val delayMs = INITIAL_RETRY_DELAY_MS * (1 shl attempt)
+                    logger.warn("Unexpected error sending $notificationType to $deviceName (attempt ${attempt + 1}/$MAX_RETRIES), retrying in ${delayMs}ms: ${e.message}")
+                    delay(delayMs)
+                }
             }
         }
+
+        // All retries exhausted
+        logger.error("Failed to send $notificationType notification to $deviceName after $MAX_RETRIES attempts", lastException)
     }
 }

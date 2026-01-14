@@ -17,6 +17,10 @@ import io.ktor.server.application.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.delay
+import org.slf4j.LoggerFactory
 
 fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain.main(args)
@@ -87,7 +91,9 @@ fun Application.module() {
     configureNotificationRoutes(deviceTokenRepository, fcmService)
 
     // Start UPS monitor
-    val monitorScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    val logger = LoggerFactory.getLogger("Application")
+    val supervisorJob = SupervisorJob()
+    val monitorScope = CoroutineScope(Dispatchers.Default + supervisorJob)
     val monitorService = UpsMonitorService(
         repository = repository,
         pollIntervalSeconds = upsConfig.pollIntervalSeconds,
@@ -105,8 +111,22 @@ fun Application.module() {
 
     // Cleanup on shutdown
     environment.monitor.subscribe(ApplicationStopped) {
+        logger.info("Application stopping, initiating graceful shutdown...")
+
+        // Stop services first (cancels their internal jobs)
         monitorService.stop()
         retentionService.stop()
+
+        // Cancel the scope to stop any remaining coroutines
+        monitorScope.cancel("Application shutting down")
+
+        // Give in-flight operations a moment to complete gracefully
+        runBlocking {
+            delay(500)
+        }
+
+        // Now safe to close database connections
         DatabaseFactory.shutdown()
+        logger.info("Shutdown complete")
     }
 }

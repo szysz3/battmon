@@ -1,5 +1,6 @@
 import SwiftUI
 import Firebase
+import FirebaseMessaging
 
 @main
 struct iOSApp: App {
@@ -43,7 +44,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 		didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
 	) {
 		print("APNs device token: \(deviceToken)")
-		// Firebase will handle the token conversion
+		Messaging.messaging().apnsToken = deviceToken
 	}
 
 	func application(
