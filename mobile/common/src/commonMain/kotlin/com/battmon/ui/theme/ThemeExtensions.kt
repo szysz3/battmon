@@ -8,7 +8,6 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 
-// Spacing tokens
 @Suppress("unused")
 object Spacing {
     val xs = 8.dp
@@ -18,14 +17,12 @@ object Spacing {
     val xl = 24.dp
     val xxl = 32.dp
 
-    // Card-specific spacing
     val cardPaddingHero = 26.dp
     val cardPaddingLarge = 22.dp
     val cardPaddingMedium = 18.dp
     val cardPaddingSmall = 16.dp
 }
 
-// Corner radius tokens
 @Suppress("unused")
 object CornerRadius {
     val small = 12.dp
@@ -36,7 +33,6 @@ object CornerRadius {
     val xxxl = 28.dp
 }
 
-// Elevation tokens
 @Suppress("unused")
 object Elevation {
     val none = 0.dp
@@ -47,7 +43,6 @@ object Elevation {
     val extreme = 12.dp
 }
 
-// Gradient constants
 private object GradientBlend {
     const val START_BLEND = 0.12f
     const val MID_BLEND_LIGHT = 0.16f

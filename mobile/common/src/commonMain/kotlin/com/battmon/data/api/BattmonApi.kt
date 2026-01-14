@@ -19,15 +19,6 @@ class BattmonApi {
         const val DEFAULT_PAGE_SIZE = 500
     }
 
-    /**
-     * Fetches UPS status history with pagination support.
-     *
-     * @param from Start timestamp (inclusive)
-     * @param to End timestamp (inclusive)
-     * @param limit Maximum number of records to return (default: 500)
-     * @param offset Number of records to skip for pagination (default: 0)
-     * @return UpsStatusHistory containing the data and pagination info
-     */
     suspend fun getHistory(
         from: Instant,
         to: Instant,

@@ -34,7 +34,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Request notification permission and fetch token
         requestNotificationPermissionAndToken()
 
         setContent {
@@ -44,7 +43,6 @@ class MainActivity : ComponentActivity() {
 
     private fun requestNotificationPermissionAndToken() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13+ requires runtime permission
             when {
                 ContextCompat.checkSelfPermission(
                     this,
@@ -59,7 +57,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         } else {
-            // Pre-Android 13, permission is granted at install time
             Log.d(TAG, "Notification permission not required for this Android version")
             fetchAndRegisterToken()
         }
@@ -72,14 +69,11 @@ class MainActivity : ComponentActivity() {
                 return@addOnCompleteListener
             }
 
-            // Get new FCM registration token
             val token = task.result
             Log.d(TAG, "FCM token: $token")
 
-            // Get device name
             val deviceName = "${Build.MANUFACTURER} ${Build.MODEL}"
 
-            // Register token with backend
             tokenManager.registerToken(
                 fcmToken = token,
                 deviceName = deviceName,

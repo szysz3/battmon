@@ -47,9 +47,6 @@ data class HistoryFilterState(
     val statusFilter: HistoryStatusFilter
 )
 
-/**
- * Tracks pagination state for history loading.
- */
 data class PaginationState(
     val currentOffset: Long = 0,
     val totalCount: Long = 0,
@@ -90,7 +87,6 @@ class HistoryViewModel(
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    // Store current time range for pagination
     private var currentFrom: Instant = Clock.System.now().minus(24.hours)
     private var currentTo: Instant = Clock.System.now()
 
@@ -105,7 +101,6 @@ class HistoryViewModel(
     }
 
     fun loadHistory(from: Instant, to: Instant) {
-        // Reset pagination for new query
         currentFrom = from
         currentTo = to
         _paginationState.value = PaginationState()
@@ -135,10 +130,6 @@ class HistoryViewModel(
         }
     }
 
-    /**
-     * Loads the next page of history data.
-     * Call this when the user scrolls to the bottom of the list.
-     */
     fun loadMore() {
         val pagination = _paginationState.value
         if (!pagination.hasMore || pagination.isLoadingMore) {
@@ -156,7 +147,6 @@ class HistoryViewModel(
 
             when (result) {
                 is UiState.Success -> {
-                    // Append new items to existing list
                     _historyItems.value = _historyItems.value + result.data.data
                     _paginationState.value = PaginationState(
                         currentOffset = nextOffset,
@@ -167,7 +157,6 @@ class HistoryViewModel(
                     _uiState.value = UiState.Success(_historyItems.value)
                 }
                 is UiState.Error -> {
-                    // Keep existing data, just stop loading
                     _paginationState.value = pagination.copy(isLoadingMore = false)
                 }
                 else -> {

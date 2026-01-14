@@ -30,7 +30,6 @@ application {
 dependencies {
     implementation(projects.shared)
 
-    // Ktor Server
     implementation("io.ktor:ktor-server-core-jvm")
     implementation("io.ktor:ktor-server-netty")
     implementation("io.ktor:ktor-server-core")
@@ -38,27 +37,21 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation")
     implementation("io.ktor:ktor-serialization-kotlinx-json")
 
-    // Database
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.kotlin.datetime)
     implementation(libs.postgresql)
     implementation("com.zaxxer:HikariCP:6.2.1")
 
-    // Serialization & DateTime
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.datetime)
 
-    // Firebase Admin SDK
     implementation("com.google.firebase:firebase-admin:9.4.2")
 
-    // Email
     implementation("com.sun.mail:jakarta.mail:2.0.1")
 
-    // Logging
     implementation("ch.qos.logback:logback-classic:$logback_version")
 
-    // Testing
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:${libs.versions.kotlin.get()}")
 }

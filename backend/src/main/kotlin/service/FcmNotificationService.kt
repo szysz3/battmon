@@ -30,7 +30,6 @@ class FcmNotificationService(
         }
 
         try {
-            // Use .use {} to ensure FileInputStream is properly closed
             FileInputStream(serviceAccountPath).use { serviceAccount ->
                 val options = FirebaseOptions.builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))
@@ -200,9 +199,6 @@ class FcmNotificationService(
             .build()
     }
 
-    /**
-     * Builds status data map from UpsStatus for inclusion in notifications.
-     */
     private fun buildStatusDataMap(status: UpsStatus): Map<String, String> {
         val dataMap = mutableMapOf(
             "status" to status.status,
@@ -218,13 +214,6 @@ class FcmNotificationService(
         return dataMap
     }
 
-    /**
-     * Generic message builder that constructs a Firebase message with platform-specific configurations.
-     * @param notification The notification to send
-     * @param dataMap Custom data payload to include with the notification
-     * @param fcmToken The device FCM token
-     * @param badgeCount iOS badge count (0 to clear, 1+ to show)
-     */
     private fun buildMessage(
         notification: Notification,
         dataMap: Map<String, String>,
@@ -264,16 +253,6 @@ class FcmNotificationService(
             .build()
     }
 
-    /**
-     * Generic method to send notifications to all registered device tokens.
-     * Handles token validation, error cases, automatic cleanup of invalid tokens,
-     * and retries for transient failures.
-     *
-     * @param notification The notification content to send
-     * @param dataMap Custom data payload to include with the notification
-     * @param badgeCount iOS badge count (0 to clear, 1+ to show)
-     * @param notificationType Description of notification type for logging (e.g., "status alert", "connection lost")
-     */
     private suspend fun sendNotificationToAllTokens(
         notification: Notification,
         dataMap: Map<String, String>,
@@ -294,15 +273,6 @@ class FcmNotificationService(
         }
     }
 
-    /**
-     * Sends a message with retry logic for transient failures.
-     * Uses exponential backoff: 1s, 2s, 4s delays between retries.
-     *
-     * @param message The FCM message to send
-     * @param fcmToken The device token (used for cleanup on permanent failure)
-     * @param deviceName The device name for logging
-     * @param notificationType Description for logging
-     */
     private suspend fun sendMessageWithRetry(
         message: Message,
         fcmToken: String,
@@ -315,21 +285,19 @@ class FcmNotificationService(
             try {
                 val response = FirebaseMessaging.getInstance().send(message)
                 logger.info("Successfully sent $notificationType notification to $deviceName: $response")
-                return // Success - exit early
+                return
             } catch (e: FirebaseMessagingException) {
                 when (e.messagingErrorCode) {
-                    // Permanent failures - don't retry, remove invalid tokens
                     MessagingErrorCode.INVALID_ARGUMENT,
                     MessagingErrorCode.UNREGISTERED -> {
                         logger.warn("Invalid or unregistered token for $deviceName, removing: ${e.message}")
                         deviceTokenRepository.delete(fcmToken)
-                        return // Don't retry for permanent failures
+                        return
                     }
-                    // Transient failures - retry with backoff
                     else -> {
                         lastException = e
                         if (attempt < MAX_RETRIES - 1) {
-                            val delayMs = INITIAL_RETRY_DELAY_MS * (1 shl attempt) // Exponential backoff
+                            val delayMs = INITIAL_RETRY_DELAY_MS * (1 shl attempt)
                             logger.warn("Transient error sending $notificationType to $deviceName (attempt ${attempt + 1}/$MAX_RETRIES), retrying in ${delayMs}ms: ${e.message}")
                             delay(delayMs)
                         }
@@ -345,7 +313,6 @@ class FcmNotificationService(
             }
         }
 
-        // All retries exhausted
         logger.error("Failed to send $notificationType notification to $deviceName after $MAX_RETRIES attempts", lastException)
     }
 }

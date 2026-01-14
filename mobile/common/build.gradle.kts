@@ -40,25 +40,19 @@ kotlin {
             implementation(compose.materialIconsExtended)
             implementation(compose.components.resources)
 
-            // Networking
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.ktor.client.logging)
 
-            // DateTime
             implementation(libs.kotlinx.datetime)
 
-            // Coroutines
             implementation(libs.kotlinx.coroutines.core)
 
-            // Navigation
             implementation(libs.androidx.navigation.compose)
 
-            // ViewModel multiplatform (align with navigation-compose 2.8.0-alpha10 deps)
             implementation(libs.androidx.lifecycle.viewmodel.compose)
 
-            // SavedState (align with navigation-compose 2.8.0-alpha10 deps)
             implementation(libs.androidx.savedstate)
         }
 

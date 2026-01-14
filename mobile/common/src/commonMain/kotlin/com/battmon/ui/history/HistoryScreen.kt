@@ -346,7 +346,6 @@ private fun HistoryItem(
         cornerRadius = 22.dp,
         padding = 18.dp
     ) {
-        // Collapsed view
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -392,7 +391,6 @@ private fun HistoryItem(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Key metrics in collapsed view
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -404,7 +402,6 @@ private fun HistoryItem(
 
         }
 
-        // Expanded view
         AnimatedVisibility(
             visible = isExpanded,
             enter = expandVertically(

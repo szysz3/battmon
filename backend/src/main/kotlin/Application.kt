@@ -27,7 +27,6 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
-    // Load configuration
     val dbConfig = DatabaseConfig(
         jdbcUrl = environment.config.property("database.jdbcUrl").getString(),
         driver = environment.config.property("database.driver").getString(),
@@ -59,7 +58,6 @@ fun Application.module() {
         to = environment.config.property("email.to").getString()
     )
 
-    // Initialize database
     DatabaseFactory.init(
         jdbcUrl = dbConfig.jdbcUrl,
         driverClassName = dbConfig.driver,
@@ -68,11 +66,9 @@ fun Application.module() {
         maxPoolSize = dbConfig.maxPoolSize
     )
 
-    // Create repositories
     val repository = UpsStatusRepository()
     val deviceTokenRepository = DeviceTokenRepository()
 
-    // Initialize Firebase
     val fcmService = FcmNotificationService(
         deviceTokenRepository = deviceTokenRepository,
         serviceAccountPath = firebaseConfig.serviceAccountPath,
@@ -80,17 +76,14 @@ fun Application.module() {
     )
     fcmService.initialize()
 
-    // Initialize Email
     val emailService = EmailNotificationService(
         config = emailConfig
     )
 
-    // Configure plugins
     configureSerialization()
     configureRouting(repository)
     configureNotificationRoutes(deviceTokenRepository, fcmService)
 
-    // Start UPS monitor
     val logger = LoggerFactory.getLogger("Application")
     val supervisorJob = SupervisorJob()
     val monitorScope = CoroutineScope(Dispatchers.Default + supervisorJob)
@@ -109,23 +102,18 @@ fun Application.module() {
     monitorService.start(monitorScope)
     retentionService.start(monitorScope)
 
-    // Cleanup on shutdown
     environment.monitor.subscribe(ApplicationStopped) {
         logger.info("Application stopping, initiating graceful shutdown...")
 
-        // Stop services first (cancels their internal jobs)
         monitorService.stop()
         retentionService.stop()
 
-        // Cancel the scope to stop any remaining coroutines
         monitorScope.cancel("Application shutting down")
 
-        // Give in-flight operations a moment to complete gracefully
         runBlocking {
             delay(500)
         }
 
-        // Now safe to close database connections
         DatabaseFactory.shutdown()
         logger.info("Shutdown complete")
     }

@@ -59,25 +59,20 @@ class UpsMonitorService(
             val output = executeApcAccess()
             val status = ApcAccessParser.parse(output)
 
-            // Validate that the status has meaningful data
             if (isBlankStatus(status)) {
                 logger.warn("Received blank/empty status data from apcaccess, not storing")
                 handleFailure()
                 return@withContext
             }
 
-            // Valid data received - store it and reset failure counter
             repository.insert(status)
             logger.debug("Stored UPS status: ${status.status}")
 
-            // Store the output for email notifications
             lastApcAccessOutput = output
 
-            // Reset failure tracking on successful data retrieval
             if (consecutiveFailures > 0) {
                 logger.info("Successfully received data after $consecutiveFailures failures")
 
-                // Send recovery notification if we previously sent a failure notification
                 if (failureNotificationSent) {
                     sendConnectionRestoredNotification(consecutiveFailures, output)
                 }
@@ -86,7 +81,6 @@ class UpsMonitorService(
                 failureNotificationSent = false
             }
 
-            // Check for status changes and send notifications
             checkStatusAndNotify(status, output)
 
         } catch (e: Exception) {
@@ -117,7 +111,6 @@ class UpsMonitorService(
     }
 
     private fun isBlankStatus(status: UpsStatus): Boolean {
-        // Consider status blank if critical fields are empty or missing
         return status.status.isBlank() ||
                status.apc.isBlank() ||
                status.hostname.isBlank() ||
@@ -128,7 +121,6 @@ class UpsMonitorService(
         val currentStatus = status.status.uppercase()
         val previousStatus = lastStatus
 
-        // Check if status changed to non-ONLINE
         val isCurrentlyOffline = !currentStatus.contains("ONLINE")
         val wasOnlineOrUnknown = previousStatus == null || previousStatus.contains("ONLINE")
 
@@ -154,12 +146,10 @@ class UpsMonitorService(
             .start()
 
         try {
-            // Read output with proper resource management
             val output = process.inputStream.bufferedReader().use { reader ->
                 reader.readText()
             }
 
-            // Wait for process to complete
             val completed = process.waitFor(APCACCESS_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             if (!completed) {
                 throw IllegalStateException("apcaccess timed out after ${APCACCESS_TIMEOUT_SECONDS}s")
@@ -171,12 +161,9 @@ class UpsMonitorService(
             }
             return output
         } finally {
-            // Ensure process is always cleaned up, even if exceptions occur
             if (process.isAlive) {
                 process.destroy()
-                // Give it a moment to terminate gracefully
                 if (!process.waitFor(2, TimeUnit.SECONDS)) {
-                    // Force kill if it doesn't terminate
                     process.destroyForcibly()
                 }
             }

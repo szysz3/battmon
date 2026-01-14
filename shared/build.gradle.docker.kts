@@ -10,7 +10,6 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-// Point to the multiplatform commonMain sources
 sourceSets {
     main {
         java.srcDirs("src/commonMain/kotlin")

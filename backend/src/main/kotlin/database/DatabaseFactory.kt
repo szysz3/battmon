@@ -18,7 +18,6 @@ object DatabaseFactory {
         password: String,
         maxPoolSize: Int
     ) {
-        // Explicitly load the PostgreSQL driver
         Class.forName(driverClassName)
 
         dataSource = HikariDataSource(
@@ -40,11 +39,9 @@ object DatabaseFactory {
         )
 
         transaction(database) {
-            // Create tables
             SchemaUtils.create(UpsStatusTable)
             SchemaUtils.create(DeviceTokenTable)
 
-            // Create indexes for common queries
             exec(
                 """
                 CREATE INDEX IF NOT EXISTS idx_ups_status_timestamp_desc
@@ -54,10 +51,6 @@ object DatabaseFactory {
         }
     }
 
-    /**
-     * Closes the database connection pool.
-     * Should be called during application shutdown to ensure clean resource cleanup.
-     */
     fun shutdown() {
         dataSource?.close()
         dataSource = null

@@ -13,9 +13,6 @@ class DeviceTokenRepository {
     fun upsert(deviceToken: DeviceToken): DeviceToken = transaction {
         val now = Clock.System.now()
 
-        // Use PostgreSQL's INSERT ... ON CONFLICT DO UPDATE to handle concurrent inserts atomically
-        // This prevents race conditions when multiple clients register simultaneously
-        // On conflict: update deviceName, platform, updatedAt, lastSeen but preserve original createdAt
         DeviceTokenTable.upsert(
             keys = arrayOf(DeviceTokenTable.fcmToken),
             onUpdate = {
@@ -23,7 +20,6 @@ class DeviceTokenRepository {
                 it[DeviceTokenTable.platform] = deviceToken.platform
                 it[DeviceTokenTable.updatedAt] = now
                 it[DeviceTokenTable.lastSeen] = now
-                // Note: createdAt is intentionally omitted to preserve the original creation timestamp
             }
         ) {
             it[fcmToken] = deviceToken.fcmToken
@@ -34,7 +30,6 @@ class DeviceTokenRepository {
             it[lastSeen] = now
         }
 
-        // Fetch the result to return the complete token with database-generated ID
         DeviceTokenTable
             .selectAll()
             .where { DeviceTokenTable.fcmToken eq deviceToken.fcmToken }

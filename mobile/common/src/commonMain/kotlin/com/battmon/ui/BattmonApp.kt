@@ -86,7 +86,6 @@ private fun BottomNavigationBar(
 ) {
     val accentColor = MaterialTheme.colorScheme.primary
 
-    // Subtle gradient background
     val bottomBarGradient = Brush.verticalGradient(
         colors = listOf(
             MaterialTheme.colorScheme.surfaceVariant,
@@ -98,7 +97,6 @@ private fun BottomNavigationBar(
         modifier = Modifier
             .fillMaxWidth()
     ) {
-        // Drop shadow that extends upward over the content
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -120,7 +118,6 @@ private fun BottomNavigationBar(
                 .fillMaxWidth()
                 .background(bottomBarGradient)
         ) {
-            // Top shadow overlay - inside the bar
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

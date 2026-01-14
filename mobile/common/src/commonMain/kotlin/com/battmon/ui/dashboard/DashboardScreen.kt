@@ -112,28 +112,23 @@ private fun DashboardContent(status: UpsStatus) {
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        // Hero Status Card (Very Important - Large)
         item {
             HeroStatusCard(status)
         }
 
-        // Load Card (Important - Medium)
         item {
             ModernLoadCard(status)
         }
 
-        // Battery & Time Row (Less Important - Small cards side by side)
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Battery Charge Card
                 Box(modifier = Modifier.weight(1f)) {
                     CompactBatteryCard(status)
                 }
 
-                // Time Left Card
                 Box(modifier = Modifier.weight(1f)) {
                     CompactTimeCard(status)
                 }
@@ -142,7 +137,6 @@ private fun DashboardContent(status: UpsStatus) {
     }
 }
 
-// Hero Status Card - Large, prominent display (Very Important)
 @Composable
 private fun HeroStatusCard(status: UpsStatus) {
     val accent = StatusMapper.getAccentColor(status.status)
@@ -159,12 +153,10 @@ private fun HeroStatusCard(status: UpsStatus) {
         padding = 26.dp,
         elevation = 2.dp
     ) {
-        // Small title
         Label(text = "UPS STATUS", color = mutedText.copy(alpha = 0.9f))
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Emphasized Status Badge
         StatusBadge(status = status.status, large = true)
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -178,7 +170,6 @@ private fun HeroStatusCard(status: UpsStatus) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Divider
         HorizontalDivider(
             modifier = Modifier.fillMaxWidth(),
             color = mutedText.copy(alpha = 0.18f)
@@ -186,13 +177,11 @@ private fun HeroStatusCard(status: UpsStatus) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Model info - small and subtle
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Model
             Column {
                 Text(
                     text = "Model",
@@ -211,7 +200,6 @@ private fun HeroStatusCard(status: UpsStatus) {
                 )
             }
 
-            // Self Test
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = "Self Test",
@@ -233,7 +221,6 @@ private fun HeroStatusCard(status: UpsStatus) {
     }
 }
 
-// Modern Load Card with Circular Progress (Important)
 @Composable
 private fun ModernLoadCard(status: UpsStatus) {
     val loadPercent = (status.loadpct?.roundToInt() ?: 0)
@@ -265,7 +252,6 @@ private fun ModernLoadCard(status: UpsStatus) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left side - Label and percentage
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -290,7 +276,6 @@ private fun ModernLoadCard(status: UpsStatus) {
                 )
             }
 
-            // Right side - Circular progress indicator
             Box(
                 modifier = Modifier.size(100.dp),
                 contentAlignment = Alignment.Center
@@ -320,7 +305,6 @@ private fun ModernLoadCard(status: UpsStatus) {
     }
 }
 
-// Compact Battery Card (Less Important)
 @Composable
 private fun CompactBatteryCard(status: UpsStatus) {
     val batteryPercent = status.bcharge?.roundToInt() ?: 0
@@ -366,7 +350,6 @@ private fun CompactBatteryCard(status: UpsStatus) {
     }
 }
 
-// Compact Time Card (Less Important)
 @Composable
 private fun CompactTimeCard(status: UpsStatus) {
     val timeLeft = status.timeleft?.roundToInt() ?: 0

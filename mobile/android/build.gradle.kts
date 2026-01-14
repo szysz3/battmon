@@ -46,7 +46,6 @@ dependencies {
     implementation(projects.mobile.common)
     implementation(libs.androidx.activity.compose)
 
-    // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
 }

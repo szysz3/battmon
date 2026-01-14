@@ -42,7 +42,6 @@ fun Application.configureRouting(repository: UpsStatusRepository) {
                     val from = Instant.parse(fromParam)
                     val to = Instant.parse(toParam)
 
-                    // Validate time range order
                     if (to < from) {
                         call.respond(
                             HttpStatusCode.BadRequest,
@@ -51,8 +50,6 @@ fun Application.configureRouting(repository: UpsStatusRepository) {
                         return@get
                     }
 
-                    // Parse and validate pagination parameters
-                    // If parameter is provided but invalid, return error instead of using default
                     val limit = if (limitParam != null) {
                         limitParam.toIntOrNull() ?: run {
                             call.respond(
@@ -62,7 +59,7 @@ fun Application.configureRouting(repository: UpsStatusRepository) {
                             return@get
                         }
                     } else {
-                        1000  // Default when not provided
+                        1000
                     }
 
                     val offset = if (offsetParam != null) {
@@ -74,7 +71,7 @@ fun Application.configureRouting(repository: UpsStatusRepository) {
                             return@get
                         }
                     } else {
-                        0L  // Default when not provided
+                        0L
                     }
 
                     if (limit < 1 || limit > 10000) {

@@ -62,14 +62,6 @@ class UpsStatusRepository {
             .firstOrNull()
     }
 
-    /**
-     * Finds UPS status records within a time range.
-     * @param from Start timestamp (inclusive)
-     * @param to End timestamp (inclusive)
-     * @param limit Maximum number of records to return (default: 1000, max: 10000)
-     * @param offset Number of records to skip (default: 0)
-     * @return List of UPS status records ordered by timestamp descending
-     */
     fun findByTimeRange(
         from: Instant,
         to: Instant,
@@ -85,12 +77,6 @@ class UpsStatusRepository {
             .map { it.toUpsStatus() }
     }
 
-    /**
-     * Counts the number of UPS status records within a time range.
-     * @param from Start timestamp (inclusive)
-     * @param to End timestamp (inclusive)
-     * @return Total count of records in the time range
-     */
     fun countByTimeRange(from: Instant, to: Instant): Long = transaction {
         UpsStatusTable
             .selectAll()

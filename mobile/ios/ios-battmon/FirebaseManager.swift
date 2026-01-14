@@ -8,10 +8,8 @@ class FirebaseManager: NSObject, ObservableObject {
 
     @Published var fcmToken: String?
 
-    /// Callback to be invoked when a valid FCM token is received (after APNS is set)
     private var onTokenReceived: ((String) -> Void)?
 
-    /// Tracks whether we've already registered with the backend for this token
     private var lastRegisteredToken: String?
 
     override private init() {
@@ -26,8 +24,6 @@ class FirebaseManager: NSObject, ObservableObject {
         print("Firebase configured successfully")
     }
 
-    /// Requests notification permission and registers for remote notifications.
-    /// The token callback will be invoked via MessagingDelegate once APNS is set and FCM token is ready.
     func requestNotificationPermission(onToken: @escaping (String) -> Void) {
         self.onTokenReceived = onToken
 
@@ -44,9 +40,6 @@ class FirebaseManager: NSObject, ObservableObject {
 
                 if granted {
                     DispatchQueue.main.async {
-                        // This triggers APNS registration
-                        // The APNS token will be received in AppDelegate.didRegisterForRemoteNotificationsWithDeviceToken
-                        // Then Firebase will generate the FCM token and call MessagingDelegate.didReceiveRegistrationToken
                         UIApplication.shared.registerForRemoteNotifications()
                     }
                 }
@@ -54,19 +47,15 @@ class FirebaseManager: NSObject, ObservableObject {
         )
     }
 
-    /// Sets the callback for when FCM token is received.
-    /// If a token is already available, calls the callback immediately.
     func setTokenCallback(_ callback: @escaping (String) -> Void) {
         self.onTokenReceived = callback
 
-        // If we already have a token, invoke callback immediately
         if let token = fcmToken {
             callback(token)
         }
     }
 }
 
-// MARK: - MessagingDelegate
 extension FirebaseManager: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         guard let token = fcmToken else {
@@ -77,14 +66,12 @@ extension FirebaseManager: MessagingDelegate {
         print("Firebase: FCM token received: \(token)")
         self.fcmToken = token
 
-        // Post notification for any observers
         NotificationCenter.default.post(
             name: Notification.Name("FCMToken"),
             object: nil,
             userInfo: ["token": token]
         )
 
-        // Invoke the callback if set and token is new
         if let callback = onTokenReceived, lastRegisteredToken != token {
             lastRegisteredToken = token
             callback(token)
@@ -92,9 +79,7 @@ extension FirebaseManager: MessagingDelegate {
     }
 }
 
-// MARK: - UNUserNotificationCenterDelegate
 extension FirebaseManager: UNUserNotificationCenterDelegate {
-    // Receive displayed notifications for iOS 10 devices.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
@@ -104,7 +89,6 @@ extension FirebaseManager: UNUserNotificationCenterDelegate {
 
         print("Will present notification with userInfo: \(userInfo)")
 
-        // Show notification even when app is in foreground
         completionHandler([[.banner, .badge, .sound]])
     }
 

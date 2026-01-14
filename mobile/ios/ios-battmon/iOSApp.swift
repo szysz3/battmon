@@ -11,7 +11,6 @@ struct iOSApp: App {
 		WindowGroup {
 			ContentView()
 				.onAppear {
-					// Initialize notification service
 					NotificationServiceBridge.shared.initialize()
 					clearBadge()
 				}

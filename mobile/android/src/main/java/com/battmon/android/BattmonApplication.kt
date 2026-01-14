@@ -11,11 +11,9 @@ class BattmonApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        // Initialize Firebase
         FirebaseApp.initializeApp(this)
         Log.d(TAG, "Firebase initialized")
 
-        // Create notification channel for high-importance notifications
         createNotificationChannel()
     }
 

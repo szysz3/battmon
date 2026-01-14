@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""
-Simple HTTP proxy for apcaccess command.
-This service runs on the host machine and exposes the apcaccess command via HTTP,
-allowing the containerized backend to query UPS status.
-"""
-
 import subprocess
 import logging
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -24,14 +18,10 @@ APCACCESS_COMMAND = ['apcaccess', 'status']
 
 
 class ApcAccessHandler(BaseHTTPRequestHandler):
-    """HTTP handler for apcaccess requests."""
-
     def log_message(self, format, *args):
-        """Override to use Python logging instead of stderr."""
         logger.info("%s - %s" % (self.address_string(), format % args))
 
     def do_GET(self):
-        """Handle GET requests."""
         parsed_path = urlparse(self.path)
 
         if parsed_path.path == '/apcaccess':
@@ -42,7 +32,6 @@ class ApcAccessHandler(BaseHTTPRequestHandler):
             self.send_error(404, "Endpoint not found")
 
     def handle_apcaccess(self):
-        """Execute apcaccess and return the output."""
         try:
             logger.debug(f"Executing command: {' '.join(APCACCESS_COMMAND)}")
             result = subprocess.run(
@@ -77,7 +66,6 @@ class ApcAccessHandler(BaseHTTPRequestHandler):
             self.send_error(500, f"Internal error: {str(e)}")
 
     def handle_health(self):
-        """Health check endpoint."""
         self.send_response(200)
         self.send_header('Content-Type', 'text/plain')
         self.end_headers()
@@ -85,7 +73,6 @@ class ApcAccessHandler(BaseHTTPRequestHandler):
 
 
 def main():
-    """Start the HTTP server."""
     server_address = (HOST, PORT)
     httpd = HTTPServer(server_address, ApcAccessHandler)
 
