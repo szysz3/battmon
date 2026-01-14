@@ -16,7 +16,7 @@ database:
 
 ups:
   monitor:
-    pollIntervalSeconds: ${UPS_POLL_INTERVAL:5}
+    pollIntervalSeconds: ${UPS_POLL_INTERVAL:10}
     command: "${UPS_COMMAND:apcaccess status}"
 
 firebase:

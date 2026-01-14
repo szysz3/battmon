@@ -6,10 +6,11 @@ import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.util.concurrent.TimeUnit
 
 class UpsMonitorService(
     private val repository: UpsStatusRepository,
-    private val pollIntervalSeconds: Long = 5,
+    private val pollIntervalSeconds: Long = 10,
     private val apcAccessCommand: String = "apcaccess status",
     private val fcmService: FcmNotificationService? = null,
     private val emailService: EmailNotificationService? = null
@@ -23,6 +24,7 @@ class UpsMonitorService(
 
     companion object {
         private const val MAX_CONSECUTIVE_FAILURES = 10
+        private const val APCACCESS_TIMEOUT_SECONDS = 7L
     }
 
     fun start(scope: CoroutineScope) {
@@ -146,17 +148,37 @@ class UpsMonitorService(
     }
 
     private fun executeApcAccess(): String {
-        val process = ProcessBuilder(apcAccessCommand.split(" "))
+        val commandParts = parseCommand(apcAccessCommand)
+        val process = ProcessBuilder(commandParts)
             .redirectErrorStream(true)
             .start()
 
         val output = BufferedReader(InputStreamReader(process.inputStream))
             .use { it.readText() }
 
-        val exitCode = process.waitFor()
+        val completed = process.waitFor(APCACCESS_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        if (!completed) {
+            process.destroy()
+            if (!process.waitFor(2, TimeUnit.SECONDS)) {
+                process.destroyForcibly()
+            }
+            throw IllegalStateException("apcaccess timed out after ${APCACCESS_TIMEOUT_SECONDS}s")
+        }
+
+        val exitCode = process.exitValue()
         if (exitCode != 0) {
             throw IllegalStateException("apcaccess failed (exit=$exitCode): ${output.trim()}")
         }
         return output
+    }
+
+    private fun parseCommand(command: String): List<String> {
+        val tokenRegex = Regex("""("[^"]*"|'[^']*'|\S+)""")
+        return tokenRegex.findAll(command)
+            .map { match ->
+                match.value.trim().removeSurrounding("\"").removeSurrounding("'")
+            }
+            .toList()
+            .ifEmpty { listOf(command) }
     }
 }
