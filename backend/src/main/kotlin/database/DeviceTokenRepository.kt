@@ -13,44 +13,33 @@ class DeviceTokenRepository {
     fun upsert(deviceToken: DeviceToken): DeviceToken = transaction {
         val now = Clock.System.now()
 
-        // Try to find existing token
-        val existing = DeviceTokenTable
+        // Use PostgreSQL's INSERT ... ON CONFLICT DO UPDATE to handle concurrent inserts atomically
+        // This prevents race conditions when multiple clients register simultaneously
+        // On conflict: update deviceName, platform, updatedAt, lastSeen but preserve original createdAt
+        DeviceTokenTable.upsert(
+            keys = arrayOf(DeviceTokenTable.fcmToken),
+            onUpdate = {
+                it[DeviceTokenTable.deviceName] = deviceToken.deviceName
+                it[DeviceTokenTable.platform] = deviceToken.platform
+                it[DeviceTokenTable.updatedAt] = now
+                it[DeviceTokenTable.lastSeen] = now
+                // Note: createdAt is intentionally omitted to preserve the original creation timestamp
+            }
+        ) {
+            it[fcmToken] = deviceToken.fcmToken
+            it[this.deviceName] = deviceToken.deviceName
+            it[platform] = deviceToken.platform
+            it[createdAt] = now
+            it[updatedAt] = now
+            it[lastSeen] = now
+        }
+
+        // Fetch the result to return the complete token with database-generated ID
+        DeviceTokenTable
             .selectAll()
             .where { DeviceTokenTable.fcmToken eq deviceToken.fcmToken }
-            .singleOrNull()
-
-        if (existing != null) {
-            // Update existing token
-            DeviceTokenTable.update({ DeviceTokenTable.fcmToken eq deviceToken.fcmToken }) {
-                it[deviceName] = deviceToken.deviceName
-                it[platform] = deviceToken.platform
-                it[updatedAt] = now
-                it[lastSeen] = now
-            }
-            deviceToken.copy(
-                id = existing[DeviceTokenTable.id],
-                createdAt = existing[DeviceTokenTable.createdAt],
-                updatedAt = now,
-                lastSeen = now
-            )
-        } else {
-            // Insert new token
-            val id = DeviceTokenTable.insert {
-                it[fcmToken] = deviceToken.fcmToken
-                it[deviceName] = deviceToken.deviceName
-                it[platform] = deviceToken.platform
-                it[createdAt] = now
-                it[updatedAt] = now
-                it[lastSeen] = now
-            }[DeviceTokenTable.id]
-
-            deviceToken.copy(
-                id = id,
-                createdAt = now,
-                updatedAt = now,
-                lastSeen = now
-            )
-        }
+            .single()
+            .toDeviceToken()
     }
 
     fun findAll(): List<DeviceToken> = transaction {

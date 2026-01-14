@@ -9,6 +9,8 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.vendors.PostgreSQLDialect
 
 object DatabaseFactory {
+    private var dataSource: HikariDataSource? = null
+
     fun init(
         jdbcUrl: String,
         driverClassName: String,
@@ -19,7 +21,7 @@ object DatabaseFactory {
         // Explicitly load the PostgreSQL driver
         Class.forName(driverClassName)
 
-        val dataSource = HikariDataSource(
+        dataSource = HikariDataSource(
             HikariConfig().apply {
                 this.jdbcUrl = jdbcUrl
                 this.driverClassName = driverClassName
@@ -30,7 +32,7 @@ object DatabaseFactory {
         )
 
         val database = Database.connect(
-            datasource = dataSource,
+            datasource = dataSource!!,
             databaseConfig = DatabaseConfig {
                 useNestedTransactions = true
                 explicitDialect = PostgreSQLDialect()
@@ -50,5 +52,14 @@ object DatabaseFactory {
             """.trimIndent()
             )
         }
+    }
+
+    /**
+     * Closes the database connection pool.
+     * Should be called during application shutdown to ensure clean resource cleanup.
+     */
+    fun shutdown() {
+        dataSource?.close()
+        dataSource = null
     }
 }

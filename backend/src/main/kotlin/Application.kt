@@ -107,5 +107,6 @@ fun Application.module() {
     environment.monitor.subscribe(ApplicationStopped) {
         monitorService.stop()
         retentionService.stop()
+        DatabaseFactory.shutdown()
     }
 }
