@@ -231,7 +231,7 @@ if [ "$EMAIL_ALREADY_CONFIGURED" = false ]; then
     echo "  2. Create an App Password at: https://myaccount.google.com/apppasswords"
     echo "  3. Use the 16-character App Password (not your regular Gmail password)"
     echo ""
-    print_info "See EMAIL_SETUP.md for detailed instructions"
+    print_info "See README.md for detailed instructions"
     echo ""
 
     # Sender email
@@ -498,7 +498,7 @@ if grep -q "^EMAIL_ENABLED=true" .env 2>/dev/null; then
     echo -e "${GREEN}Email Notifications: ENABLED${NC}"
     RECIPIENT=$(grep "^EMAIL_TO=" .env | cut -d= -f2)
     echo "  • Recipient: $RECIPIENT"
-    echo "  • For setup help: see EMAIL_SETUP.md"
+    echo "  • For setup help: see README.md"
     echo ""
 fi
 
