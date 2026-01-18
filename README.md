@@ -42,6 +42,54 @@ SMTP_PASSWORD=app-password
 EMAIL_TO=recipient@example.com
 ```
 
+## Mobile App Configuration
+
+Before building the mobile app, you need to configure a few files:
+
+### 1. Set your server IP address
+
+Update the following files with your BattMon server's IP address:
+
+**AppConfig.kt** (`mobile/common/src/commonMain/kotlin/com/battmon/config/AppConfig.kt`):
+```kotlin
+const val API_BASE_URL = "http://YOUR_SERVER_IP:8080"
+```
+
+**Android** (`mobile/android/src/main/res/xml/network_security_config.xml`):
+```xml
+<domain includeSubdomains="true">YOUR_SERVER_IP</domain>
+```
+
+**iOS** (`mobile/ios/ios-battmon/Info.plist`):
+```xml
+<key>YOUR_SERVER_IP</key>
+```
+
+### 2. Firebase Configuration (for push notifications)
+
+**Android:**
+1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com)
+2. Add an Android app with package name `com.battmon.android`
+3. Download `google-services.json` and place it in `mobile/android/`
+
+**iOS:**
+1. Add an iOS app to your Firebase project
+2. Download `GoogleService-Info.plist` and add it to the Xcode project
+
+**Backend:**
+1. Generate a service account key from Firebase Console
+2. Save it as `backend/firebase-credentials.json`
+
+### 3. Build the app
+
+```bash
+# Android
+./gradlew :mobile:android:assembleDebug
+
+# iOS - open in Xcode
+open mobile/ios/ios-battmon.xcodeproj
+```
+
 ## Project layout
 
 - `backend/` Ktor API + UPS polling

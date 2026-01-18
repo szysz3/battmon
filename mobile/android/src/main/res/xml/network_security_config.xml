@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Network Security Configuration for BattMon Android App
+
+    IMPORTANT: Update the domain below to match your server's IP address or hostname.
+    This configuration allows cleartext (HTTP) traffic to your local BattMon server.
+
+    For production with HTTPS, you can remove this file and the reference in AndroidManifest.xml,
+    or configure it to only allow HTTPS traffic.
+
+    Examples:
+    - Local IP: 192.168.1.100
+    - Hostname: battmon.local
+    - Production: your-domain.com (use HTTPS instead)
+-->
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">192.168.50.104</domain>
+        <!-- Replace YOUR_SERVER_IP with your BattMon server's IP address -->
+        <domain includeSubdomains="true">YOUR_SERVER_IP</domain>
     </domain-config>
 </network-security-config>

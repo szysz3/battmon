@@ -36,5 +36,12 @@ logs/
 
 # Firebase credentials (NEVER commit these!)
 GoogleService-Info.plist
+google-services.json
+**/google-services.json
 firebase-credentials.json
 **/firebase-credentials*.json
+
+# Environment files with secrets
+.env
+.env.local
+.env.production
