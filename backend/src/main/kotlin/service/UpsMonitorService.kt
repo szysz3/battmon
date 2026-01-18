@@ -2,18 +2,20 @@ package com.battmon.service
 
 import com.battmon.database.UpsStatusRepository
 import com.battmon.model.UpsStatus
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.util.concurrent.TimeUnit
 
 class UpsMonitorService(
     private val repository: UpsStatusRepository,
-    private val pollIntervalSeconds: Long = 10,
-    private val apcAccessCommand: String = "apcaccess status",
-    private val fcmService: FcmNotificationService? = null,
-    private val emailService: EmailNotificationService? = null
+    private val apcAccessClient: ApcAccessClient,
+    private val notificationDispatcher: UpsNotificationDispatcher,
+    private val pollIntervalSeconds: Long = 10
 ) {
     private val logger = LoggerFactory.getLogger(UpsMonitorService::class.java)
     private var monitorJob: Job? = null
@@ -24,7 +26,6 @@ class UpsMonitorService(
 
     companion object {
         private const val MAX_CONSECUTIVE_FAILURES = 10
-        private const val APCACCESS_TIMEOUT_SECONDS = 7L
     }
 
     fun start(scope: CoroutineScope) {
@@ -56,7 +57,7 @@ class UpsMonitorService(
 
     private suspend fun pollAndStore() = withContext(Dispatchers.IO) {
         try {
-            val output = executeApcAccess()
+            val output = apcAccessClient.fetchStatusOutput()
             val status = ApcAccessParser.parse(output)
 
             if (isBlankStatus(status)) {
@@ -74,7 +75,7 @@ class UpsMonitorService(
                 logger.info("Successfully received data after $consecutiveFailures failures")
 
                 if (failureNotificationSent) {
-                    sendConnectionRestoredNotification(consecutiveFailures, output)
+                    notificationDispatcher.sendConnectionRestoredAlert(consecutiveFailures, output)
                 }
 
                 consecutiveFailures = 0
@@ -95,19 +96,9 @@ class UpsMonitorService(
 
         if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES && !failureNotificationSent) {
             logger.error("Reached $MAX_CONSECUTIVE_FAILURES consecutive failures - sending notification")
-            sendFailureNotification()
+            notificationDispatcher.sendConnectionLostAlert(consecutiveFailures, lastApcAccessOutput)
             failureNotificationSent = true
         }
-    }
-
-    private suspend fun sendFailureNotification() {
-        fcmService?.sendConnectionLostAlert(consecutiveFailures)
-        emailService?.sendConnectionLostEmail(consecutiveFailures, lastApcAccessOutput)
-    }
-
-    private suspend fun sendConnectionRestoredNotification(previousFailures: Int, currentOutput: String) {
-        fcmService?.sendConnectionRestoredAlert(previousFailures)
-        emailService?.sendConnectionRestoredEmail(previousFailures, currentOutput)
     }
 
     private fun isBlankStatus(status: UpsStatus): Boolean {
@@ -126,57 +117,14 @@ class UpsMonitorService(
 
         if (isCurrentlyOffline && wasOnlineOrUnknown) {
             logger.warn("UPS status changed from ${previousStatus ?: "unknown"} to $currentStatus - sending notification")
-            fcmService?.sendStatusAlert(status)
-            emailService?.sendStatusAlertEmail(status, apcAccessOutput)
+            notificationDispatcher.sendStatusAlert(status, apcAccessOutput)
         } else if (isCurrentlyOffline && !wasOnlineOrUnknown) {
             logger.debug("UPS still offline: $currentStatus (was: $previousStatus)")
         } else if (!isCurrentlyOffline && previousStatus != null && !previousStatus.contains("ONLINE")) {
             logger.info("UPS status recovered from $previousStatus to $currentStatus")
-            fcmService?.sendRecoveryAlert(status, previousStatus)
-            emailService?.sendRecoveryEmail(status, previousStatus, apcAccessOutput)
+            notificationDispatcher.sendRecoveryAlert(status, previousStatus, apcAccessOutput)
         }
 
         lastStatus = currentStatus
-    }
-
-    private fun executeApcAccess(): String {
-        val commandParts = parseCommand(apcAccessCommand)
-        val process = ProcessBuilder(commandParts)
-            .redirectErrorStream(true)
-            .start()
-
-        try {
-            val output = process.inputStream.bufferedReader().use { reader ->
-                reader.readText()
-            }
-
-            val completed = process.waitFor(APCACCESS_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            if (!completed) {
-                throw IllegalStateException("apcaccess timed out after ${APCACCESS_TIMEOUT_SECONDS}s")
-            }
-
-            val exitCode = process.exitValue()
-            if (exitCode != 0) {
-                throw IllegalStateException("apcaccess failed (exit=$exitCode): ${output.trim()}")
-            }
-            return output
-        } finally {
-            if (process.isAlive) {
-                process.destroy()
-                if (!process.waitFor(2, TimeUnit.SECONDS)) {
-                    process.destroyForcibly()
-                }
-            }
-        }
-    }
-
-    private fun parseCommand(command: String): List<String> {
-        val tokenRegex = Regex("""("[^"]*"|'[^']*'|\S+)""")
-        return tokenRegex.findAll(command)
-            .map { match ->
-                match.value.trim().removeSurrounding("\"").removeSurrounding("'")
-            }
-            .toList()
-            .ifEmpty { listOf(command) }
     }
 }

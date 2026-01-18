@@ -7,6 +7,8 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.messaging.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import java.io.FileInputStream
 
@@ -139,7 +141,9 @@ class FcmNotificationService(
                 )
                 .build()
 
-            val response = FirebaseMessaging.getInstance().send(message)
+            val response = withContext(Dispatchers.IO) {
+                FirebaseMessaging.getInstance().send(message)
+            }
             logger.info("Successfully sent test notification: $response")
             true
         } catch (e: Exception) {
@@ -283,7 +287,9 @@ class FcmNotificationService(
 
         repeat(MAX_RETRIES) { attempt ->
             try {
-                val response = FirebaseMessaging.getInstance().send(message)
+                val response = withContext(Dispatchers.IO) {
+                    FirebaseMessaging.getInstance().send(message)
+                }
                 logger.info("Successfully sent $notificationType notification to $deviceName: $response")
                 return
             } catch (e: FirebaseMessagingException) {

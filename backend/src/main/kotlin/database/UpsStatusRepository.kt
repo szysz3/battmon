@@ -2,13 +2,14 @@ package com.battmon.database
 
 import com.battmon.model.UpsStatus
 import kotlinx.datetime.Instant
+import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.lessEq
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 class UpsStatusRepository {
 
-    fun insert(status: UpsStatus): UpsStatus = transaction {
+    suspend fun insert(status: UpsStatus): UpsStatus = newSuspendedTransaction(Dispatchers.IO) {
         val id = UpsStatusTable.insert {
             it[timestamp] = status.timestamp
             it[apc] = status.apc
@@ -53,7 +54,7 @@ class UpsStatusRepository {
         status.copy(id = id)
     }
 
-    fun findLatest(): UpsStatus? = transaction {
+    suspend fun findLatest(): UpsStatus? = newSuspendedTransaction(Dispatchers.IO) {
         UpsStatusTable
             .selectAll()
             .orderBy(UpsStatusTable.timestamp, SortOrder.DESC)
@@ -62,12 +63,12 @@ class UpsStatusRepository {
             .firstOrNull()
     }
 
-    fun findByTimeRange(
+    suspend fun findByTimeRange(
         from: Instant,
         to: Instant,
         limit: Int = 1000,
         offset: Long = 0
-    ): List<UpsStatus> = transaction {
+    ): List<UpsStatus> = newSuspendedTransaction(Dispatchers.IO) {
         UpsStatusTable
             .selectAll()
             .where { UpsStatusTable.timestamp greaterEq from and (UpsStatusTable.timestamp lessEq to) }
@@ -77,14 +78,14 @@ class UpsStatusRepository {
             .map { it.toUpsStatus() }
     }
 
-    fun countByTimeRange(from: Instant, to: Instant): Long = transaction {
+    suspend fun countByTimeRange(from: Instant, to: Instant): Long = newSuspendedTransaction(Dispatchers.IO) {
         UpsStatusTable
             .selectAll()
             .where { UpsStatusTable.timestamp greaterEq from and (UpsStatusTable.timestamp lessEq to) }
             .count()
     }
 
-    fun deleteOlderThan(cutoff: Instant): Int = transaction {
+    suspend fun deleteOlderThan(cutoff: Instant): Int = newSuspendedTransaction(Dispatchers.IO) {
         UpsStatusTable.deleteWhere { timestamp lessEq cutoff }
     }
 

@@ -3,14 +3,15 @@ package com.battmon.database
 import com.battmon.model.DeviceToken
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 class DeviceTokenRepository {
 
-    fun upsert(deviceToken: DeviceToken): DeviceToken = transaction {
+    suspend fun upsert(deviceToken: DeviceToken): DeviceToken = newSuspendedTransaction(Dispatchers.IO) {
         val now = Clock.System.now()
 
         DeviceTokenTable.upsert(
@@ -37,14 +38,14 @@ class DeviceTokenRepository {
             .toDeviceToken()
     }
 
-    fun findAll(): List<DeviceToken> = transaction {
+    suspend fun findAll(): List<DeviceToken> = newSuspendedTransaction(Dispatchers.IO) {
         DeviceTokenTable
             .selectAll()
             .orderBy(DeviceTokenTable.createdAt, SortOrder.DESC)
             .map { it.toDeviceToken() }
     }
 
-    fun findByToken(fcmToken: String): DeviceToken? = transaction {
+    suspend fun findByToken(fcmToken: String): DeviceToken? = newSuspendedTransaction(Dispatchers.IO) {
         DeviceTokenTable
             .selectAll()
             .where { DeviceTokenTable.fcmToken eq fcmToken }
@@ -52,17 +53,17 @@ class DeviceTokenRepository {
             .singleOrNull()
     }
 
-    fun delete(fcmToken: String): Boolean = transaction {
+    suspend fun delete(fcmToken: String): Boolean = newSuspendedTransaction(Dispatchers.IO) {
         DeviceTokenTable.deleteWhere { DeviceTokenTable.fcmToken eq fcmToken } > 0
     }
 
-    fun updateLastSeen(fcmToken: String): Boolean = transaction {
+    suspend fun updateLastSeen(fcmToken: String): Boolean = newSuspendedTransaction(Dispatchers.IO) {
         DeviceTokenTable.update({ DeviceTokenTable.fcmToken eq fcmToken }) {
             it[lastSeen] = Clock.System.now()
         } > 0
     }
 
-    fun deleteInactive(cutoff: Instant): Int = transaction {
+    suspend fun deleteInactive(cutoff: Instant): Int = newSuspendedTransaction(Dispatchers.IO) {
         DeviceTokenTable.deleteWhere { lastSeen less cutoff }
     }
 

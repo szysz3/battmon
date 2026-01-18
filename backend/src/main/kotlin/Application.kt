@@ -11,6 +11,8 @@ import com.battmon.plugins.configureSerialization
 import com.battmon.routes.configureNotificationRoutes
 import com.battmon.service.EmailNotificationService
 import com.battmon.service.FcmNotificationService
+import com.battmon.service.ProcessApcAccessClient
+import com.battmon.service.DefaultUpsNotificationDispatcher
 import com.battmon.service.RetentionService
 import com.battmon.service.UpsMonitorService
 import io.ktor.server.application.*
@@ -90,9 +92,13 @@ fun Application.module() {
     val monitorService = UpsMonitorService(
         repository = repository,
         pollIntervalSeconds = upsConfig.pollIntervalSeconds,
-        apcAccessCommand = upsConfig.command,
-        fcmService = fcmService,
-        emailService = emailService
+        apcAccessClient = ProcessApcAccessClient(
+            command = upsConfig.command
+        ),
+        notificationDispatcher = DefaultUpsNotificationDispatcher(
+            fcmService = fcmService,
+            emailService = emailService
+        )
     )
     val retentionService = RetentionService(
         repository = repository,
