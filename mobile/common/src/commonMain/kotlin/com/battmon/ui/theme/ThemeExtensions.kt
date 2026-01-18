@@ -6,42 +6,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.unit.dp
-
-@Suppress("unused")
-object Spacing {
-    val xs = 8.dp
-    val sm = 12.dp
-    val md = 16.dp
-    val lg = 20.dp
-    val xl = 24.dp
-    val xxl = 32.dp
-
-    val cardPaddingHero = 26.dp
-    val cardPaddingLarge = 22.dp
-    val cardPaddingMedium = 18.dp
-    val cardPaddingSmall = 16.dp
-}
-
-@Suppress("unused")
-object CornerRadius {
-    val small = 12.dp
-    val medium = 16.dp
-    val large = 20.dp
-    val xl = 22.dp
-    val xxl = 24.dp
-    val xxxl = 28.dp
-}
-
-@Suppress("unused")
-object Elevation {
-    val none = 0.dp
-    val low = 2.dp
-    val medium = 6.dp
-    val high = 8.dp
-    val veryHigh = 10.dp
-    val extreme = 12.dp
-}
 
 private object GradientBlend {
     const val START_BLEND = 0.12f

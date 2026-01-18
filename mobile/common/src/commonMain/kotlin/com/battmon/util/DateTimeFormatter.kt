@@ -1,7 +1,6 @@
 package com.battmon.util
 
 import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -13,13 +12,6 @@ object DateTimeFormatter {
         val minutes = localDateTime.minute.toString().padStart(2, '0')
         val seconds = localDateTime.second.toString().padStart(2, '0')
         return "$hours:$minutes:$seconds"
-    }
-
-    @Suppress("unused")
-    fun formatTime(time: LocalTime): String {
-        val hour = time.hour.toString().padStart(2, '0')
-        val minute = time.minute.toString().padStart(2, '0')
-        return "$hour:$minute"
     }
 
     fun formatDate(instant: Instant): String {
