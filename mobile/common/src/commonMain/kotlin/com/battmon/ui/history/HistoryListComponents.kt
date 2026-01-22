@@ -23,11 +23,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -59,10 +61,13 @@ internal fun HistoryList(
     items: List<UpsStatus>,
     expandedIds: Set<Long>,
     onToggleExpand: (Long) -> Unit,
-    topInset: Dp
+    topInset: Dp,
+    listState: LazyListState,
+    isLoadingMore: Boolean
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
+        state = listState,
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
@@ -75,6 +80,21 @@ internal fun HistoryList(
                 isExpanded = status.id in expandedIds,
                 onToggle = { status.id?.let { onToggleExpand(it) } }
             )
+        }
+        if (isLoadingMore) {
+            item(key = "loading_more") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 2.dp
+                    )
+                }
+            }
         }
     }
 }

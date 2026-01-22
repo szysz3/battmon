@@ -29,6 +29,7 @@ fun Application.configureRouting(repository: UpsStatusRepository) {
                 val toParam = call.request.queryParameters["to"]
                 val limitParam = call.request.queryParameters["limit"]
                 val offsetParam = call.request.queryParameters["offset"]
+                val statusFilterParam = call.request.queryParameters["statusFilter"]
 
                 if (fromParam == null || toParam == null) {
                     call.respond(
@@ -90,8 +91,19 @@ fun Application.configureRouting(repository: UpsStatusRepository) {
                         return@get
                     }
 
-                    val data = repository.findByTimeRange(from, to, limit, offset)
-                    val totalCount = repository.countByTimeRange(from, to)
+                    val statusFilter = StatusFilter.fromQuery(statusFilterParam)
+                    if (statusFilter == null) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            mapOf(
+                                "error" to "Invalid 'statusFilter' parameter: use all, online, or offline_or_on_battery"
+                            )
+                        )
+                        return@get
+                    }
+
+                    val data = repository.findByTimeRange(from, to, limit, offset, statusFilter)
+                    val totalCount = repository.countByTimeRange(from, to, statusFilter)
 
                     call.respond(
                         UpsStatusHistory(

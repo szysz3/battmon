@@ -3,6 +3,7 @@ package com.battmon.data.api
 import com.battmon.model.DeviceTokenRequest
 import com.battmon.model.UpsStatus
 import com.battmon.model.UpsStatusHistory
+import com.battmon.model.HistoryStatusFilter
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
@@ -23,13 +24,24 @@ class BattmonApi {
         from: Instant,
         to: Instant,
         limit: Int = DEFAULT_PAGE_SIZE,
-        offset: Long = 0
+        offset: Long = 0,
+        statusFilter: HistoryStatusFilter = HistoryStatusFilter.ALL
     ): UpsStatusHistory {
         return client.get("/status/history") {
             parameter("from", from.toString())
             parameter("to", to.toString())
             parameter("limit", limit.toString())
             parameter("offset", offset.toString())
+            if (statusFilter != HistoryStatusFilter.ALL) {
+                parameter(
+                    "statusFilter",
+                    when (statusFilter) {
+                        HistoryStatusFilter.ONLINE -> "online"
+                        HistoryStatusFilter.OFFLINE_OR_ON_BATTERY -> "offline_or_on_battery"
+                        HistoryStatusFilter.ALL -> "all"
+                    }
+                )
+            }
         }.body()
     }
 

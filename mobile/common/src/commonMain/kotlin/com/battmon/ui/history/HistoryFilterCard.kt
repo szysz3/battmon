@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.battmon.model.HistoryStatusFilter
 import com.battmon.ui.components.GlassCard
 import com.battmon.ui.components.Label
 import com.battmon.ui.components.LabelVariant

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.battmon.data.api.BattmonApi
 import com.battmon.data.repository.UpsRepository
+import com.battmon.model.HistoryStatusFilter
 import com.battmon.model.UpsStatus
 import com.battmon.ui.state.UiState
 import com.battmon.util.ErrorMessages
@@ -12,8 +13,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -36,12 +35,6 @@ enum class HistoryRangePreset {
     LAST_30_DAYS
 }
 
-enum class HistoryStatusFilter {
-    ALL,
-    ONLINE,
-    OFFLINE_OR_ON_BATTERY
-}
-
 data class HistoryFilterState(
     val selectedPreset: HistoryRangePreset,
     val statusFilter: HistoryStatusFilter
@@ -49,12 +42,22 @@ data class HistoryFilterState(
 
 data class PaginationState(
     val currentOffset: Long = 0,
-    val totalCount: Long = 0,
+    val totalCount: Long? = null,
     val pageSize: Int = BattmonApi.DEFAULT_PAGE_SIZE,
+    val lastPageSize: Int = 0,
     val isLoadingMore: Boolean = false
 ) {
-    val hasMore: Boolean get() = currentOffset + pageSize < totalCount
-    val loadedCount: Int get() = minOf(currentOffset.toInt() + pageSize, totalCount.toInt())
+    val hasMore: Boolean
+        get() = when {
+            totalCount != null -> currentOffset + lastPageSize < totalCount
+            else -> lastPageSize == pageSize
+        }
+    val loadedCount: Int
+        get() = if (totalCount != null) {
+            minOf(currentOffset.toInt() + lastPageSize, totalCount.toInt())
+        } else {
+            currentOffset.toInt() + lastPageSize
+        }
 }
 
 class HistoryViewModel(
@@ -79,12 +82,7 @@ class HistoryViewModel(
     val paginationState: StateFlow<PaginationState> = _paginationState.asStateFlow()
 
     private val _historyItems = MutableStateFlow<List<UpsStatus>>(emptyList())
-    val filteredItems: StateFlow<List<UpsStatus>> = combine(_historyItems, filterState) { items, filter ->
-        items.filter { status ->
-            matchesStatusFilter(status, filter.statusFilter)
-        }
-    }
-        .flowOn(Dispatchers.Default)
+    val filteredItems: StateFlow<List<UpsStatus>> = _historyItems
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private var currentFrom: Instant = Clock.System.now().minus(24.hours)
@@ -109,15 +107,16 @@ class HistoryViewModel(
         viewModelScope.launch {
             _uiState.value = UiState.Loading
             val result = withContext(Dispatchers.Default) {
-                repository.getHistory(from, to, BattmonApi.DEFAULT_PAGE_SIZE, 0)
+                repository.getHistory(from, to, BattmonApi.DEFAULT_PAGE_SIZE, 0, _filterState.value.statusFilter)
             }
             _uiState.value = when (result) {
                 is UiState.Success -> {
                     _historyItems.value = result.data.data
                     _paginationState.value = PaginationState(
                         currentOffset = 0,
-                        totalCount = result.data.totalCount ?: result.data.data.size.toLong(),
-                        pageSize = result.data.limit ?: BattmonApi.DEFAULT_PAGE_SIZE
+                        totalCount = result.data.totalCount,
+                        pageSize = result.data.limit ?: BattmonApi.DEFAULT_PAGE_SIZE,
+                        lastPageSize = result.data.data.size
                     )
                     UiState.Success(result.data.data)
                 }
@@ -142,7 +141,7 @@ class HistoryViewModel(
             _paginationState.value = pagination.copy(isLoadingMore = true)
 
             val result = withContext(Dispatchers.Default) {
-                repository.getHistory(currentFrom, currentTo, pagination.pageSize, nextOffset)
+                repository.getHistory(currentFrom, currentTo, pagination.pageSize, nextOffset, _filterState.value.statusFilter)
             }
 
             when (result) {
@@ -152,6 +151,7 @@ class HistoryViewModel(
                         currentOffset = nextOffset,
                         totalCount = result.data.totalCount ?: pagination.totalCount,
                         pageSize = result.data.limit ?: pagination.pageSize,
+                        lastPageSize = result.data.data.size,
                         isLoadingMore = false
                     )
                     _uiState.value = UiState.Success(_historyItems.value)
@@ -174,6 +174,7 @@ class HistoryViewModel(
 
     fun updateStatusFilter(filter: HistoryStatusFilter) {
         _filterState.value = _filterState.value.copy(statusFilter = filter)
+        loadHistory(currentFrom, currentTo)
     }
 
     fun toggleExpanded(id: Long) {
@@ -210,13 +211,4 @@ class HistoryViewModel(
         }
     }
 
-    private fun matchesStatusFilter(status: UpsStatus, filter: HistoryStatusFilter): Boolean {
-        val normalized = status.status.trim().lowercase()
-        val isOnline = normalized.contains("online")
-        return when (filter) {
-            HistoryStatusFilter.ALL -> true
-            HistoryStatusFilter.ONLINE -> isOnline
-            HistoryStatusFilter.OFFLINE_OR_ON_BATTERY -> !isOnline
-        }
-    }
 }

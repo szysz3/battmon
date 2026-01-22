@@ -5,6 +5,7 @@ import com.battmon.model.UpsStatus
 import com.battmon.model.UpsStatusHistory
 import com.battmon.ui.state.UiState
 import com.battmon.util.ErrorMessages
+import com.battmon.model.HistoryStatusFilter
 import kotlinx.datetime.Instant
 
 class UpsRepository {
@@ -23,10 +24,11 @@ class UpsRepository {
         from: Instant,
         to: Instant,
         limit: Int = BattmonApi.DEFAULT_PAGE_SIZE,
-        offset: Long = 0
+        offset: Long = 0,
+        statusFilter: HistoryStatusFilter = HistoryStatusFilter.ALL
     ): UiState<UpsStatusHistory> {
         return try {
-            val history = api.getHistory(from, to, limit, offset)
+            val history = api.getHistory(from, to, limit, offset, statusFilter)
             UiState.Success(history)
         } catch (e: Exception) {
             UiState.Error(ErrorMessages.withDetail(ErrorMessages.FAILED_TO_LOAD_HISTORY, e.message))

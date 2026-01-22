@@ -10,6 +10,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -18,7 +19,9 @@ import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +47,7 @@ fun HistoryScreen(
     val expandedIds by viewModel.expandedIds.collectAsState()
     val filterState by viewModel.filterState.collectAsState()
     val filteredItems by viewModel.filteredItems.collectAsState()
+    val paginationState by viewModel.paginationState.collectAsState()
     val isRefreshing = uiState is UiState.Loading
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
@@ -54,6 +58,30 @@ fun HistoryScreen(
     val filterCardVerticalPadding = 12.dp
     var filterCardHeight by remember { mutableStateOf(0.dp) }
     val listTopInset = filterCardHeight + listItemSpacing
+    val listState = rememberLazyListState()
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            val totalItems = listState.layoutInfo.totalItemsCount
+            if (totalItems == 0) {
+                false
+            } else {
+                val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                lastVisible >= totalItems - 3
+            }
+        }
+    }
+
+    LaunchedEffect(filterState) {
+        if (listState.firstVisibleItemIndex > 0) {
+            listState.scrollToItem(0)
+        }
+    }
+
+    LaunchedEffect(shouldLoadMore, paginationState.hasMore, paginationState.isLoadingMore) {
+        if (shouldLoadMore && paginationState.hasMore && !paginationState.isLoadingMore) {
+            viewModel.loadMore()
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -104,7 +132,9 @@ fun HistoryScreen(
                         items = state.items,
                         expandedIds = expandedIds,
                         onToggleExpand = { viewModel.toggleExpanded(it) },
-                        topInset = listTopInset
+                        topInset = listTopInset,
+                        listState = listState,
+                        isLoadingMore = paginationState.isLoadingMore
                     )
                 }
 
