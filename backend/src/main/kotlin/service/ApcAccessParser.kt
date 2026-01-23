@@ -6,7 +6,14 @@ import kotlinx.datetime.Clock
 object ApcAccessParser {
     private val FIELD_REGEX = Regex("""^([A-Z ]+)\s*:\s*(.*)$""")
 
-    fun parse(output: String): UpsStatus {
+    /**
+     * Parse apcaccess output into UpsStatus.
+     *
+     * @param output Raw apcaccess command output
+     * @param deviceId Optional device ID to associate with this status
+     * @return Parsed UpsStatus object
+     */
+    fun parse(output: String, deviceId: String? = null): UpsStatus {
         val fields = mutableMapOf<String, String>()
 
         output.lines().forEach { line ->
@@ -18,6 +25,7 @@ object ApcAccessParser {
         }
 
         return UpsStatus(
+            upsDeviceId = deviceId,
             timestamp = Clock.System.now(),
             apc = fields["APC"] ?: "",
             hostname = fields["HOSTNAME"] ?: "",

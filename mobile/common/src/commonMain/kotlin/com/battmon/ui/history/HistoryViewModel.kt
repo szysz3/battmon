@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.battmon.data.api.BattmonApi
 import com.battmon.data.repository.UpsRepository
 import com.battmon.model.HistoryStatusFilter
+import com.battmon.model.UpsDevice
 import com.battmon.model.UpsStatus
 import com.battmon.ui.state.UiState
 import com.battmon.util.ErrorMessages
@@ -37,7 +38,8 @@ enum class HistoryRangePreset {
 
 data class HistoryFilterState(
     val selectedPreset: HistoryRangePreset,
-    val statusFilter: HistoryStatusFilter
+    val statusFilter: HistoryStatusFilter,
+    val selectedDeviceId: String? = null
 )
 
 data class PaginationState(
@@ -64,6 +66,9 @@ class HistoryViewModel(
     private val repository: UpsRepository = UpsRepository()
 ) : ViewModel() {
 
+    private val _devices = MutableStateFlow<List<UpsDevice>>(emptyList())
+    val devices: StateFlow<List<UpsDevice>> = _devices.asStateFlow()
+
     private val _uiState = MutableStateFlow<UiState<List<UpsStatus>>>(UiState.Initial)
     val uiState: StateFlow<UiState<List<UpsStatus>>> = _uiState.asStateFlow()
 
@@ -73,7 +78,8 @@ class HistoryViewModel(
     private val _filterState = MutableStateFlow(
         HistoryFilterState(
             selectedPreset = HistoryRangePreset.LAST_24_HOURS,
-            statusFilter = HistoryStatusFilter.ALL
+            statusFilter = HistoryStatusFilter.ALL,
+            selectedDeviceId = null
         )
     )
     val filterState: StateFlow<HistoryFilterState> = _filterState.asStateFlow()
@@ -89,6 +95,7 @@ class HistoryViewModel(
     private var currentTo: Instant = Clock.System.now()
 
     init {
+        loadDevices()
         val (from, to) = rangeForPreset(HistoryRangePreset.LAST_24_HOURS)
         loadHistory(from, to)
     }
@@ -107,7 +114,14 @@ class HistoryViewModel(
         viewModelScope.launch {
             _uiState.value = UiState.Loading
             val result = withContext(Dispatchers.Default) {
-                repository.getHistory(from, to, BattmonApi.DEFAULT_PAGE_SIZE, 0, _filterState.value.statusFilter)
+                repository.getHistory(
+                    from = from,
+                    to = to,
+                    deviceId = _filterState.value.selectedDeviceId,
+                    limit = BattmonApi.DEFAULT_PAGE_SIZE,
+                    offset = 0L,
+                    statusFilter = _filterState.value.statusFilter
+                )
             }
             _uiState.value = when (result) {
                 is UiState.Success -> {
@@ -141,7 +155,14 @@ class HistoryViewModel(
             _paginationState.value = pagination.copy(isLoadingMore = true)
 
             val result = withContext(Dispatchers.Default) {
-                repository.getHistory(currentFrom, currentTo, pagination.pageSize, nextOffset, _filterState.value.statusFilter)
+                repository.getHistory(
+                    from = currentFrom,
+                    to = currentTo,
+                    deviceId = _filterState.value.selectedDeviceId,
+                    limit = pagination.pageSize,
+                    offset = nextOffset,
+                    statusFilter = _filterState.value.statusFilter
+                )
             }
 
             when (result) {
@@ -177,6 +198,13 @@ class HistoryViewModel(
         loadHistory(currentFrom, currentTo)
     }
 
+    fun selectDevice(deviceId: String?) {
+        if (_filterState.value.selectedDeviceId != deviceId) {
+            _filterState.value = _filterState.value.copy(selectedDeviceId = deviceId)
+            loadHistory(currentFrom, currentTo)
+        }
+    }
+
     fun toggleExpanded(id: Long) {
         _expandedIds.value = if (id in _expandedIds.value) {
             _expandedIds.value - id
@@ -207,6 +235,15 @@ class HistoryViewModel(
                 val from = LocalDateTime(fromDate, LocalTime(0, 0)).toInstant(timeZone)
                 val to = LocalDateTime(today, LocalTime(23, 59)).toInstant(timeZone).plus(1.minutes).minus(1.milliseconds)
                 from to to
+            }
+        }
+    }
+
+    private fun loadDevices() {
+        viewModelScope.launch {
+            when (val result = repository.getDevices()) {
+                is UiState.Success -> _devices.value = result.data
+                else -> _devices.value = emptyList()
             }
         }
     }

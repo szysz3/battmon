@@ -63,7 +63,8 @@ internal fun HistoryList(
     onToggleExpand: (Long) -> Unit,
     topInset: Dp,
     listState: LazyListState,
-    isLoadingMore: Boolean
+    isLoadingMore: Boolean,
+    deviceNameById: Map<String, String>
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -78,7 +79,8 @@ internal fun HistoryList(
             HistoryItem(
                 status = status,
                 isExpanded = status.id in expandedIds,
-                onToggle = { status.id?.let { onToggleExpand(it) } }
+                onToggle = { status.id?.let { onToggleExpand(it) } },
+                deviceName = status.upsDeviceId?.let { deviceNameById[it] ?: it }
             )
         }
         if (isLoadingMore) {
@@ -138,7 +140,8 @@ internal fun HistoryLoadingList(topInset: Dp) {
 internal fun HistoryItem(
     status: UpsStatus,
     isExpanded: Boolean,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    deviceName: String? = null
 ) {
     val accentTone = MaterialTheme.colorScheme.primary
     val cardShape = RoundedCornerShape(22.dp)
@@ -167,6 +170,15 @@ internal fun HistoryItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
+                    if (!deviceName.isNullOrBlank()) {
+                        Text(
+                            text = deviceName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                            letterSpacing = 1.1.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
                     Text(
                         text = DateTimeFormatter.formatTime(status.timestamp),
                         style = MaterialTheme.typography.titleLarge,

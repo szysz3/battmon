@@ -6,15 +6,17 @@ import com.battmon.config.FirebaseConfig
 import com.battmon.config.UpsMonitorConfig
 import com.battmon.database.DatabaseFactory
 import com.battmon.database.DeviceTokenRepository
+import com.battmon.database.UpsDeviceRepository
 import com.battmon.database.UpsStatusRepository
 import com.battmon.plugins.configureSerialization
+import com.battmon.routes.configureDeviceRoutes
 import com.battmon.routes.configureNotificationRoutes
 import com.battmon.service.EmailNotificationService
 import com.battmon.service.FcmNotificationService
-import com.battmon.service.ProcessApcAccessClient
-import com.battmon.service.DefaultUpsNotificationDispatcher
+import com.battmon.service.HttpApcAccessClient
+import com.battmon.service.DefaultMultiDeviceNotificationDispatcher
 import com.battmon.service.RetentionService
-import com.battmon.service.UpsMonitorService
+import com.battmon.service.MultiUpsMonitorService
 import io.ktor.server.application.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +41,7 @@ fun Application.module() {
 
     val upsConfig = UpsMonitorConfig(
         pollIntervalSeconds = environment.config.property("ups.monitor.pollIntervalSeconds").getString().toLong(),
-        command = environment.config.property("ups.monitor.command").getString()
+        failureThreshold = environment.config.property("ups.monitor.failureThreshold").getString().toInt()
     )
     val retentionDays = environment.config.property("database.retentionDays").getString().toInt()
     val retentionIntervalHours = environment.config.property("database.retentionIntervalHours").getString().toLong()
@@ -68,7 +70,8 @@ fun Application.module() {
         maxPoolSize = dbConfig.maxPoolSize
     )
 
-    val repository = UpsStatusRepository()
+    val statusRepository = UpsStatusRepository()
+    val deviceRepository = UpsDeviceRepository()
     val deviceTokenRepository = DeviceTokenRepository()
 
     val fcmService = FcmNotificationService(
@@ -82,29 +85,46 @@ fun Application.module() {
         config = emailConfig
     )
 
-    configureSerialization()
-    configureRouting(repository)
-    configureNotificationRoutes(deviceTokenRepository, fcmService)
+    val apcAccessProxyUrl = environment.config.propertyOrNull("ups.apcaccess.proxyUrl")
+        ?.getString()
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+        ?: throw IllegalStateException(
+            "ups.apcaccess.proxyUrl (UPS_APCACCESS_PROXY_URL) must be set; " +
+                "apcaccess is required to run on the host via the proxy"
+        )
+
+    val apcAccessClient = HttpApcAccessClient(apcAccessProxyUrl)
 
     val logger = LoggerFactory.getLogger("Application")
+    logger.info("Using apcaccess proxy at {}", apcAccessProxyUrl)
     val supervisorJob = SupervisorJob()
     val monitorScope = CoroutineScope(Dispatchers.Default + supervisorJob)
-    val monitorService = UpsMonitorService(
-        repository = repository,
-        pollIntervalSeconds = upsConfig.pollIntervalSeconds,
-        apcAccessClient = ProcessApcAccessClient(
-            command = upsConfig.command
-        ),
-        notificationDispatcher = DefaultUpsNotificationDispatcher(
+
+    // Multi-device monitor service
+    val monitorService = MultiUpsMonitorService(
+        deviceRepository = deviceRepository,
+        statusRepository = statusRepository,
+        apcAccessClient = apcAccessClient,
+        notificationDispatcher = DefaultMultiDeviceNotificationDispatcher(
             fcmService = fcmService,
             emailService = emailService
-        )
+        ),
+        pollIntervalSeconds = upsConfig.pollIntervalSeconds,
+        failureThreshold = upsConfig.failureThreshold
     )
+
     val retentionService = RetentionService(
-        repository = repository,
+        repository = statusRepository,
         retentionDays = retentionDays,
         cleanupIntervalHours = retentionIntervalHours
     )
+
+    configureSerialization()
+    configureRouting(statusRepository)
+    configureDeviceRoutes(deviceRepository, statusRepository, apcAccessClient, monitorService)
+    configureNotificationRoutes(deviceTokenRepository, fcmService)
+
     monitorService.start(monitorScope)
     retentionService.start(monitorScope)
 

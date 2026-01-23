@@ -1,76 +1,79 @@
 package com.battmon.service
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
-import java.util.concurrent.TimeUnit
+import java.net.URI
+import java.net.URLEncoder
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.nio.charset.StandardCharsets
+import java.time.Duration
 
+/**
+ * Client for fetching UPS status via apcaccess command.
+ */
 interface ApcAccessClient {
-    suspend fun fetchStatusOutput(): String
+    /**
+     * Fetch status output from a specific host:port.
+     * Used for multi-device monitoring.
+     *
+     * @param host IP address or hostname of the apcupsd NIS server
+     * @param port Port number (typically 3551)
+     * @return Raw apcaccess output string
+     */
+    suspend fun fetchStatusOutput(host: String, port: Int): String
 }
 
-class ProcessApcAccessClient(
-    private val command: String,
+class HttpApcAccessClient(
+    private val proxyBaseUrl: String,
     private val timeoutSeconds: Long = DEFAULT_TIMEOUT_SECONDS
 ) : ApcAccessClient {
-    private val logger = LoggerFactory.getLogger(ProcessApcAccessClient::class.java)
+    private val logger = LoggerFactory.getLogger(HttpApcAccessClient::class.java)
+    private val client = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(timeoutSeconds))
+        .build()
 
-    override suspend fun fetchStatusOutput(): String = coroutineScope {
-        val commandParts = parseCommand(command)
-        val process = ProcessBuilder(commandParts)
-            .redirectErrorStream(true)
-            .start()
+    override suspend fun fetchStatusOutput(host: String, port: Int): String = withContext(Dispatchers.IO) {
+        val requestUri = buildProxyUri(host, port)
+        logger.debug("Requesting apcaccess via proxy: $requestUri")
+
+        val request = HttpRequest.newBuilder()
+            .uri(requestUri)
+            .timeout(Duration.ofSeconds(timeoutSeconds))
+            .GET()
+            .build()
 
         try {
-            val outputDeferred = async(Dispatchers.IO) {
-                process.inputStream.bufferedReader().use { reader ->
-                    reader.readText()
-                }
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            if (response.statusCode() != 200) {
+                throw ApcAccessException(
+                    "apcaccess proxy failed (status=${response.statusCode()}): ${response.body().trim()}"
+                )
             }
-
-            val completed = withContext(Dispatchers.IO) {
-                process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
+            response.body()
+        } catch (e: Exception) {
+            if (e is ApcAccessException) {
+                throw e
             }
-
-            if (!completed) {
-                logger.warn("apcaccess timed out after ${timeoutSeconds}s")
-                process.destroy()
-                if (!process.waitFor(2, TimeUnit.SECONDS)) {
-                    process.destroyForcibly()
-                }
-                outputDeferred.cancel()
-                throw IllegalStateException("apcaccess timed out after ${timeoutSeconds}s")
-            }
-
-            val output = outputDeferred.await()
-            val exitCode = process.exitValue()
-            if (exitCode != 0) {
-                throw IllegalStateException("apcaccess failed (exit=$exitCode): ${output.trim()}")
-            }
-            output
-        } finally {
-            if (process.isAlive) {
-                process.destroy()
-                if (!process.waitFor(2, TimeUnit.SECONDS)) {
-                    process.destroyForcibly()
-                }
-            }
+            throw ApcAccessException("apcaccess proxy request failed: ${e.message}", e)
         }
     }
 
-    private fun parseCommand(command: String): List<String> {
-        val tokenRegex = Regex("""("[^"]*"|'[^']*'|\S+)""")
-        return tokenRegex.findAll(command)
-            .map { match ->
-                match.value.trim().removeSurrounding("\"").removeSurrounding("'")
-            }
-            .toList()
-            .ifEmpty { listOf(command) }
+    private fun buildProxyUri(host: String, port: Int): URI {
+        val base = proxyBaseUrl.trimEnd('/')
+        val encodedHost = URLEncoder.encode(host, StandardCharsets.UTF_8)
+        val encodedPort = URLEncoder.encode(port.toString(), StandardCharsets.UTF_8)
+        return URI.create("$base/apcaccess?host=$encodedHost&port=$encodedPort")
     }
 
     companion object {
         private const val DEFAULT_TIMEOUT_SECONDS = 7L
     }
 }
+
+/**
+ * Exception thrown when apcaccess command fails.
+ */
+class ApcAccessException(message: String, cause: Throwable? = null) : Exception(message, cause)

@@ -17,7 +17,10 @@ database:
 ups:
   monitor:
     pollIntervalSeconds: ${UPS_POLL_INTERVAL:10}
-    command: "${UPS_COMMAND:apcaccess status}"
+    # Number of consecutive failures before sending connection lost notification
+    failureThreshold: ${UPS_FAILURE_THRESHOLD:10}
+  apcaccess:
+    proxyUrl: "${UPS_APCACCESS_PROXY_URL:}"
 
 firebase:
   serviceAccountPath: "${FIREBASE_SERVICE_ACCOUNT_PATH:backend/firebase-credentials.json}"

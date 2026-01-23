@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UpsStatus(
     val id: Long? = null,
+    val upsDeviceId: String? = null,
     val timestamp: Instant,
 
     val apc: String,

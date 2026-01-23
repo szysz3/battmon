@@ -45,3 +45,6 @@ firebase-credentials.json
 .env
 .env.local
 .env.production
+
+# Planning documents (internal use only)
+multi-ups-implementation-plan.md

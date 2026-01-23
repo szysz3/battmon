@@ -1,10 +1,17 @@
 package com.battmon.database
 
+import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
 
 object UpsStatusTable : Table("ups_status") {
     val id = long("id").autoIncrement()
+
+    /** Foreign key to ups_devices table. Nullable for backward compatibility during migration. */
+    val upsDeviceId = varchar("ups_device_id", 255)
+        .references(UpsDeviceTable.id, onDelete = ReferenceOption.CASCADE)
+        .nullable()
+
     val timestamp = timestamp("timestamp")
 
     val apc = varchar("apc", 50)

@@ -11,14 +11,16 @@ Real-time UPS monitoring with a Kotlin Multiplatform mobile app, push/email aler
 
 ## Prerequisites
 
-**The entire system depends on `apcaccess status` being available and working on the host machine.** This command is provided by [apcupsd](http://www.apcupsd.org/) and reads UPS data over USB/serial. Without it, BattMon has nothing to monitor.
+**BattMon connects to UPS devices via apcupsd Network Information Server (NIS).** Each UPS host must run [apcupsd](http://www.apcupsd.org/) with NIS enabled (default port 3551).
 
-Verify your setup:
+BattMon expects `apcaccess` to run on the host, not inside the Docker container. Run the host-side proxy (`scripts/apcaccess-proxy.py`) and set `UPS_APCACCESS_PROXY_URL` (default `http://localhost:8081` in docker-compose).
+
+Verify connectivity from the host running the proxy:
 ```bash
-apcaccess status
+apcaccess -h <host>:3551 status
 ```
 
-You should see output like `STATUS : ONLINE`, `BCHARGE : 100.0 Percent`, etc. If this fails, install and configure apcupsd first.
+You should see output like `STATUS : ONLINE`, `BCHARGE : 100.0 Percent`, etc. If this fails, configure apcupsd on the UPS host and ensure port 3551 is reachable.
 
 Other requirements: Docker, Python 3, Firebase project (for push notifications).
 
@@ -30,13 +32,13 @@ cd battmon
 ./setup.sh
 ```
 
-The script verifies `apcaccess status` works, sets up configuration, starts an HTTP proxy for the backend to read UPS data, and launches Docker services.
+The script sets up configuration and launches Docker services. After the backend is running, add devices via the mobile app or the `/devices` API.
 
 Backend API runs on `http://localhost:8080`.
 
 ### Platform notes
 
-The backend uses `network_mode: host` to reach the apcaccess proxy on the host. This requires Linux. On macOS/Windows, switch to bridge networking and set `UPS_COMMAND` to `http://host.docker.internal:8081/apcaccess`.
+The backend must be able to reach each UPS host on port 3551. On Docker Desktop (macOS/Windows), ensure containers can reach your LAN or run the backend directly on the host.
 
 ## Mobile app
 

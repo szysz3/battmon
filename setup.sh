@@ -88,33 +88,12 @@ fi
 
 echo ""
 
-# Step 2: Verify apcupsd is working
-echo -e "${BLUE}Step 2: Verifying apcupsd configuration...${NC}"
+# Step 2: apcupsd NIS configuration reminder (multi-UPS)
+echo -e "${BLUE}Step 2: apcupsd NIS configuration reminder...${NC}"
 echo ""
-
-if apcaccess status >/dev/null 2>&1; then
-    print_success "apcaccess is working correctly"
-
-    # Show brief UPS info
-    UPS_STATUS=$(apcaccess status 2>/dev/null | grep "STATUS" | awk '{print $3}')
-    UPS_MODEL=$(apcaccess status 2>/dev/null | grep "MODEL" | cut -d: -f2 | xargs)
-
-    if [ -n "$UPS_STATUS" ]; then
-        print_info "UPS Status: $UPS_STATUS"
-    fi
-    if [ -n "$UPS_MODEL" ]; then
-        print_info "UPS Model: $UPS_MODEL"
-    fi
-else
-    print_warning "apcaccess command failed - apcupsd might not be configured"
-    read -p "Do you want to continue anyway? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        print_error "Setup cancelled. Please configure apcupsd first."
-        exit 1
-    fi
-fi
-
+print_info "BattMon connects to UPS devices over the apcupsd Network Information Server (NIS)."
+print_info "Ensure each UPS host has apcupsd running with NIS enabled on port 3551."
+print_info "Test from the backend host: apcaccess -h <host>:3551 status"
 echo ""
 
 # Step 3: Setup environment file
@@ -296,110 +275,11 @@ fi
 
 echo ""
 
-# Step 5: Setup apcaccess-proxy
-echo -e "${BLUE}Step 5: Setting up apcaccess HTTP proxy...${NC}"
+# Step 5: Device configuration reminder
+echo -e "${BLUE}Step 5: Configure UPS devices...${NC}"
 echo ""
-
-# Check if proxy is already running
-if curl -s http://localhost:8081/health >/dev/null 2>&1; then
-    print_success "apcaccess-proxy is already running"
-    PROXY_ALREADY_RUNNING=true
-else
-    PROXY_ALREADY_RUNNING=false
-
-    print_info "The apcaccess-proxy needs to run on the host machine"
-    echo ""
-    echo "Choose how to run it:"
-    echo "  1) Systemd service (recommended for production, Linux only)"
-    echo "  2) Background process (simple, works on all systems)"
-    echo "  3) Skip (I'll run it manually later)"
-    echo ""
-    read -p "Enter your choice (1-3): " -n 1 -r PROXY_CHOICE
-    echo
-    echo ""
-
-    case $PROXY_CHOICE in
-        1)
-            if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-                print_info "Setting up systemd service..."
-
-                # Ask for installation path
-                read -p "Install to /opt/battmon? (Y/n): " -n 1 -r
-                echo
-
-                if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-                    INSTALL_PATH="/opt/battmon"
-                else
-                    read -p "Enter installation path: " INSTALL_PATH
-                fi
-
-                echo ""
-                print_info "This requires sudo privileges..."
-
-                sudo mkdir -p "$INSTALL_PATH"
-                sudo cp -r "$SCRIPT_DIR"/* "$INSTALL_PATH/"
-                sudo cp "$INSTALL_PATH/scripts/apcaccess-proxy.service" /etc/systemd/system/
-
-                # Update service file with correct path
-                sudo sed -i "s|WorkingDirectory=.*|WorkingDirectory=$INSTALL_PATH|" /etc/systemd/system/apcaccess-proxy.service
-                sudo sed -i "s|ExecStart=.*|ExecStart=/usr/bin/python3 $INSTALL_PATH/scripts/apcaccess-proxy.py|" /etc/systemd/system/apcaccess-proxy.service
-
-                sudo systemctl daemon-reload
-                sudo systemctl enable apcaccess-proxy
-                sudo systemctl start apcaccess-proxy
-
-                sleep 2
-
-                if sudo systemctl is-active --quiet apcaccess-proxy; then
-                    print_success "Systemd service installed and started"
-                    print_info "Check status: sudo systemctl status apcaccess-proxy"
-                    print_info "View logs: sudo journalctl -u apcaccess-proxy -f"
-                else
-                    print_error "Failed to start systemd service"
-                    print_info "Check logs: sudo journalctl -u apcaccess-proxy -n 50"
-                    exit 1
-                fi
-            else
-                print_error "Systemd is only available on Linux"
-                print_info "Falling back to background process..."
-                nohup python3 scripts/apcaccess-proxy.py > apcaccess-proxy.log 2>&1 &
-                sleep 2
-                print_success "Started apcaccess-proxy in background (PID: $!)"
-                print_info "Logs: tail -f apcaccess-proxy.log"
-            fi
-            ;;
-        2)
-            nohup python3 scripts/apcaccess-proxy.py > apcaccess-proxy.log 2>&1 &
-            sleep 2
-            print_success "Started apcaccess-proxy in background (PID: $!)"
-            print_info "Logs: tail -f apcaccess-proxy.log"
-            ;;
-        3)
-            print_warning "Skipping proxy setup - you must start it manually before running the backend"
-            print_info "Run: python3 scripts/apcaccess-proxy.py &"
-            ;;
-        *)
-            print_error "Invalid choice. Skipping proxy setup."
-            ;;
-    esac
-fi
-
-echo ""
-
-# Verify proxy is running
-if curl -s http://localhost:8081/health >/dev/null 2>&1; then
-    print_success "apcaccess-proxy is responding on http://localhost:8081"
-else
-    print_error "apcaccess-proxy is not responding"
-    print_warning "The backend won't work until the proxy is running"
-
-    read -p "Do you want to continue anyway? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
-fi
-
+print_info "After the backend is running, add devices via the mobile app or the /devices API."
+print_info "Each device should use the apcupsd NIS host:port (default 3551)."
 echo ""
 
 # Step 6: Build and start Docker containers

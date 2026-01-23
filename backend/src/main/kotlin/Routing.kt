@@ -15,15 +15,6 @@ fun Application.configureRouting(repository: UpsStatusRepository) {
         }
 
         route("/status") {
-            get("/latest") {
-                val latest = repository.findLatest()
-                if (latest != null) {
-                    call.respond(latest)
-                } else {
-                    call.respond(HttpStatusCode.NotFound, mapOf("error" to "No status data available"))
-                }
-            }
-
             get("/history") {
                 val fromParam = call.request.queryParameters["from"]
                 val toParam = call.request.queryParameters["to"]
@@ -102,8 +93,9 @@ fun Application.configureRouting(repository: UpsStatusRepository) {
                         return@get
                     }
 
-                    val data = repository.findByTimeRange(from, to, limit, offset, statusFilter)
-                    val totalCount = repository.countByTimeRange(from, to, statusFilter)
+                    val deviceId = call.request.queryParameters["deviceId"]
+                    val data = repository.findByTimeRange(from, to, deviceId, limit, offset, statusFilter)
+                    val totalCount = repository.countByTimeRange(from, to, deviceId, statusFilter)
 
                     call.respond(
                         UpsStatusHistory(

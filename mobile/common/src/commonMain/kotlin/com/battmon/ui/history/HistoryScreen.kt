@@ -41,11 +41,13 @@ import com.battmon.ui.state.UiState
 @Composable
 @OptIn(ExperimentalMaterialApi::class)
 fun HistoryScreen(
+    selectedDeviceId: String? = null,
     viewModel: HistoryViewModel = viewModel { HistoryViewModel() }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val expandedIds by viewModel.expandedIds.collectAsState()
     val filterState by viewModel.filterState.collectAsState()
+    val devices by viewModel.devices.collectAsState()
     val filteredItems by viewModel.filteredItems.collectAsState()
     val paginationState by viewModel.paginationState.collectAsState()
     val isRefreshing = uiState is UiState.Loading
@@ -59,6 +61,9 @@ fun HistoryScreen(
     var filterCardHeight by remember { mutableStateOf(0.dp) }
     val listTopInset = filterCardHeight + listItemSpacing
     val listState = rememberLazyListState()
+    val deviceNameById = remember(devices) {
+        devices.associate { it.id to it.name }
+    }
     val shouldLoadMore by remember {
         derivedStateOf {
             val totalItems = listState.layoutInfo.totalItemsCount
@@ -75,6 +80,10 @@ fun HistoryScreen(
         if (listState.firstVisibleItemIndex > 0) {
             listState.scrollToItem(0)
         }
+    }
+
+    LaunchedEffect(selectedDeviceId) {
+        viewModel.selectDevice(selectedDeviceId)
     }
 
     LaunchedEffect(shouldLoadMore, paginationState.hasMore, paginationState.isLoadingMore) {
@@ -134,7 +143,8 @@ fun HistoryScreen(
                         onToggleExpand = { viewModel.toggleExpanded(it) },
                         topInset = listTopInset,
                         listState = listState,
-                        isLoadingMore = paginationState.isLoadingMore
+                        isLoadingMore = paginationState.isLoadingMore,
+                        deviceNameById = deviceNameById
                     )
                 }
 

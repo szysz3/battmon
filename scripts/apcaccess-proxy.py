@@ -2,7 +2,7 @@
 import subprocess
 import logging
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 # Configure logging
 logging.basicConfig(
@@ -33,9 +33,20 @@ class ApcAccessHandler(BaseHTTPRequestHandler):
 
     def handle_apcaccess(self):
         try:
-            logger.debug(f"Executing command: {' '.join(APCACCESS_COMMAND)}")
+            parsed_path = urlparse(self.path)
+            query = parse_qs(parsed_path.query)
+            host = query.get('host', [None])[0]
+            port = query.get('port', [None])[0]
+
+            if host:
+                port_value = port or '3551'
+                command = ['apcaccess', '-h', f'{host}:{port_value}', 'status']
+            else:
+                command = APCACCESS_COMMAND
+
+            logger.debug(f"Executing command: {' '.join(command)}")
             result = subprocess.run(
-                APCACCESS_COMMAND,
+                command,
                 capture_output=True,
                 text=True,
                 timeout=10
