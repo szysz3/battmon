@@ -48,6 +48,12 @@ MISSING_DEPS=()
 
 if command_exists docker; then
     print_success "Docker is installed ($(docker --version | cut -d' ' -f3 | tr -d ','))"
+    if docker info >/dev/null 2>&1; then
+        print_success "Docker daemon is running"
+    else
+        print_error "Docker daemon is not running"
+        MISSING_DEPS+=("docker-daemon")
+    fi
 else
     print_error "Docker is not installed"
     MISSING_DEPS+=("docker")
@@ -69,6 +75,13 @@ if command_exists python3; then
 else
     print_error "Python 3 is not installed"
     MISSING_DEPS+=("python3")
+fi
+
+if command_exists curl; then
+    print_success "curl is installed"
+else
+    print_error "curl is not installed"
+    MISSING_DEPS+=("curl")
 fi
 
 if command_exists apcaccess; then
@@ -99,6 +112,12 @@ echo ""
 # Step 3: Setup environment file
 echo -e "${BLUE}Step 3: Setting up environment configuration...${NC}"
 echo ""
+
+if [ ! -f ".env.example" ]; then
+    print_error ".env.example not found"
+    print_info "Please ensure .env.example exists in the repo root and run this script again."
+    exit 1
+fi
 
 if [ -f ".env" ]; then
     print_warning ".env file already exists"
