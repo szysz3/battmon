@@ -38,6 +38,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.battmon.model.UpsDevice
 import com.battmon.ui.components.GlassCard
 import com.battmon.ui.components.Label
 import com.battmon.ui.components.LabelVariant
@@ -51,7 +52,7 @@ import com.battmon.ui.theme.filterCardGradient
 fun AddEditDeviceScreen(
     deviceId: String? = null,
     onNavigateBack: () -> Unit,
-    onSaveSuccess: () -> Unit,
+    onSaveSuccess: (UpsDevice) -> Unit,
     viewModel: AddEditDeviceViewModel = viewModel { AddEditDeviceViewModel(deviceId) }
 ) {
     val name by viewModel.name.collectAsState()
@@ -66,9 +67,10 @@ fun AddEditDeviceScreen(
     val isLoading by viewModel.isLoading.collectAsState()
 
     LaunchedEffect(saveState) {
-        if (saveState is UiState.Success) {
+        val successState = saveState as? UiState.Success
+        if (successState != null) {
             viewModel.resetSaveState()
-            onSaveSuccess()
+            onSaveSuccess(successState.data)
         }
     }
 

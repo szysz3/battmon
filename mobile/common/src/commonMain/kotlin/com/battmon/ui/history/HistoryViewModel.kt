@@ -110,6 +110,11 @@ class HistoryViewModel(
         currentTo = to
         _paginationState.value = PaginationState()
         _historyItems.value = emptyList()
+        if (_filterState.value.selectedDeviceId == null) {
+            _uiState.value = UiState.Success(emptyList())
+            _expandedIds.value = emptySet()
+            return
+        }
 
         viewModelScope.launch {
             _uiState.value = UiState.Loading

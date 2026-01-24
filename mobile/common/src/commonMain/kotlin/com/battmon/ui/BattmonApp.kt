@@ -223,7 +223,8 @@ fun BattmonApp() {
         AddEditDeviceScreen(
             deviceId = null,
             onNavigateBack = { showAddDeviceModal = false },
-            onSaveSuccess = {
+            onSaveSuccess = { device ->
+                selectionViewModel.selectDevice(device.id)
                 selectionViewModel.refreshDevices()
                 showAddDeviceModal = false
             }
