@@ -38,7 +38,7 @@ services:
       # Poll interval (seconds) for device checks
       UPS_POLL_INTERVAL: ${UPS_POLL_INTERVAL:-5}
       # Host-side apcaccess proxy URL
-      UPS_APCACCESS_PROXY_URL: ${UPS_APCACCESS_PROXY_URL:-http://localhost:8081}
+      UPS_APCACCESS_PROXY_URL: ${UPS_APCACCESS_PROXY_URL:-http://localhost:8083}
 
       # Firebase configuration
       FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-/app/firebase-credentials.json}

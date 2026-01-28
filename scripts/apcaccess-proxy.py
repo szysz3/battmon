@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import subprocess
 import logging
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -12,8 +13,8 @@ logging.basicConfig(
 logger = logging.getLogger('apcaccess-proxy')
 
 # Configuration
-HOST = 'localhost'
-PORT = 8081
+HOST = os.getenv('APCACCESS_PROXY_HOST', '0.0.0.0')
+PORT = int(os.getenv('APCACCESS_PROXY_PORT', '8083'))
 APCACCESS_COMMAND = ['apcaccess', 'status']
 
 

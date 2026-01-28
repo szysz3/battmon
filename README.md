@@ -13,7 +13,7 @@ Real-time UPS monitoring with a Kotlin Multiplatform mobile app, push/email aler
 
 **BattMon connects to UPS devices via apcupsd Network Information Server (NIS).** Each UPS host must run [apcupsd](http://www.apcupsd.org/) with NIS enabled (default port 3551).
 
-BattMon expects `apcaccess` to run on the host, not inside the Docker container. Run the host-side proxy (`scripts/apcaccess-proxy.py`) and set `UPS_APCACCESS_PROXY_URL` (default `http://localhost:8081` in docker-compose).
+BattMon expects `apcaccess` to run on the host, not inside the Docker container. Run the host-side proxy (`scripts/apcaccess-proxy.py`) and set `UPS_APCACCESS_PROXY_URL` (default `http://localhost:8083` in docker-compose).
 
 Verify connectivity from the host running the proxy:
 ```bash

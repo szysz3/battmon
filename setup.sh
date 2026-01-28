@@ -109,6 +109,51 @@ print_info "Ensure each UPS host has apcupsd running with NIS enabled on port 35
 print_info "Test from the backend host: apcaccess -h <host>:3551 status"
 echo ""
 
+# Step 2.5: Setup apcaccess proxy service (optional)
+echo -e "${BLUE}Step 2.5: apcaccess proxy service setup...${NC}"
+echo ""
+
+if command_exists systemctl; then
+    print_info "BattMon requires the host-side apcaccess proxy to be running."
+    read -p "Install and start the apcaccess-proxy systemd service now? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        PYTHON3_BIN="$(command -v python3)"
+        SERVICE_TMP="/tmp/apcaccess-proxy.service"
+        cat > "$SERVICE_TMP" <<EOF
+[Unit]
+Description=APC Access HTTP Proxy
+After=network.target apcupsd.service
+Wants=apcupsd.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=$SCRIPT_DIR
+ExecStart=$PYTHON3_BIN $SCRIPT_DIR/scripts/apcaccess-proxy.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        sudo cp "$SERVICE_TMP" /etc/systemd/system/apcaccess-proxy.service
+        sudo systemctl daemon-reload
+        sudo systemctl enable --now apcaccess-proxy
+        # Ensure the running service picks up any script or unit changes
+        sudo systemctl restart apcaccess-proxy
+        print_success "apcaccess-proxy service installed and started"
+    else
+        print_info "Skipping proxy service setup"
+    fi
+else
+    print_warning "systemctl not found; start scripts/apcaccess-proxy.py manually or set up a service manager"
+fi
+
+echo ""
+
 # Step 3: Setup environment file
 echo -e "${BLUE}Step 3: Setting up environment configuration...${NC}"
 echo ""
