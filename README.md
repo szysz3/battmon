@@ -36,6 +36,52 @@ The script sets up configuration and launches Docker services. After the backend
 
 Backend API runs on `http://localhost:8080`.
 
+## Services and runtime flow
+
+BattMon relies on three running pieces:
+
+1) **apcupsd NIS on each UPS host**  
+   Each UPS host must run apcupsd with NIS enabled (default port 3551).
+
+2) **Host-side apcaccess proxy**  
+   The proxy runs on the backend host and executes `apcaccess` against each UPS host.
+
+   - Install via the setup script (systemd):
+     ```bash
+     ./setup.sh
+     ```
+   - Or run manually:
+     ```bash
+     python3 scripts/apcaccess-proxy.py
+     ```
+   - Verify:
+     ```bash
+     curl http://localhost:8083/health
+     ```
+
+   The backend talks to the proxy via `UPS_APCACCESS_PROXY_URL` (default `http://localhost:8083`).
+
+3) **Backend + database**  
+   Docker Compose starts Postgres and the backend:
+   ```bash
+   docker compose up -d
+   ```
+
+### Multi-UPS behavior
+
+Each device has its own `host` and `port` (the apcupsd NIS endpoint). The backend uses a **single**
+proxy URL and routes requests by passing `host`/`port` to the proxy. View devices via:
+
+```bash
+curl http://localhost:8080/devices
+curl http://localhost:8080/status/latest
+```
+
+### Automatic DB cleanup (multi-UPS safe)
+
+The backend runs a retention job that deletes old status rows across **all devices** by timestamp
+using the defaults in `backend/src/main/resources/application.yaml`.
+
 ### Platform notes
 
 The backend must be able to reach each UPS host on port 3551. On Docker Desktop (macOS/Windows), ensure containers can reach your LAN or run the backend directly on the host.
